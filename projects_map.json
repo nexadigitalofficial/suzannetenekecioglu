@@ -1,0 +1,383 @@
+[
+  {
+    "id": "cbvip-prj-1",
+    "db_id": 1,
+    "title": "ANGİM BEYTEPE",
+    "folder_name": "ANGİM BEYTEPE",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_1.jpg",
+    "cloud_video_url": "https://files.catbox.moe/adtx6s.mp4",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/angim_beytepe.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - ANGİM BEYTEPE.pdf",
+        "path": "projeler/ANGİM BEYTEPE/SUNUM - ANGİM BEYTEPE.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true,
+    "cloud_direct_url": "https://files.catbox.moe/adtx6s.mp4",
+    "tanitim_cloud_url": "https://files.catbox.moe/adtx6s.mp4",
+    "tanitim_filename": "SLIDESHOW - ANGİM BEYTEPE.mp4",
+    "slideshow_cloud_url": "https://files.catbox.moe/adtx6s.mp4",
+    "slideshow_filename": "SLIDESHOW - ANGİM BEYTEPE.mp4"
+  },
+  {
+    "id": "cbvip-prj-2",
+    "db_id": 2,
+    "title": "ANKAPORT - SARAY",
+    "folder_name": "ANKAPORT - SARAY",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_2.jpg",
+    "cloud_video_url": "https://files.catbox.moe/ycb666.mp4",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/ankaport_saray.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - ANKAPORT SARAY.pdf",
+        "path": "projeler/ANKAPORT - SARAY/SUNUM - ANKAPORT SARAY.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true,
+    "cloud_direct_url": "https://files.catbox.moe/ycb666.mp4",
+    "slideshow_cloud_url": "https://files.catbox.moe/2nrsrz.mp4",
+    "slideshow_filename": "SLIDESHOW - ANKAPORT - SARAY.mp4"
+  },
+  {
+    "id": "cbvip-prj-3",
+    "db_id": 3,
+    "title": "EVART YALIKAVAK",
+    "folder_name": "EVART YALIKAVAK",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_3.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-3",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/evart_yalikavak.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - EVART YALIKAVAK.pdf",
+        "path": "projeler/EVART YALIKAVAK/SUNUM - EVART YALIKAVAK.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true,
+    "slideshow_cloud_url": "https://files.catbox.moe/1e5lem.mp4",
+    "slideshow_filename": "SLIDESHOW - EVART YALIKAVAK.mp4"
+  },
+  {
+    "id": "cbvip-prj-4",
+    "db_id": 4,
+    "title": "GRANDE YAŞAMKENT",
+    "folder_name": "GRANDE YAŞAMKENT",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_4.jpg",
+    "cloud_video_url": "https://files.catbox.moe/olzjrf.mp4",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/grande_yasamkent.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - GRANDE YAŞAMKENT.pdf",
+        "path": "projeler/GRANDE YAŞAMKENT/SUNUM - GRANDE YAŞAMKENT.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true,
+    "cloud_direct_url": "https://files.catbox.moe/olzjrf.mp4"
+  },
+  {
+    "id": "cbvip-prj-5",
+    "db_id": 5,
+    "title": "GÖKDEMİR İMZA",
+    "folder_name": "GÖKDEMİR İMZA",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_5.jpg",
+    "cloud_video_url": "https://files.catbox.moe/6qycfr.mp4",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/gokdemir_imza.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - GÖKDEMİR İMZA.pdf",
+        "path": "projeler/GÖKDEMİR İMZA/SUNUM - GÖKDEMİR İMZA.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true,
+    "cloud_direct_url": "https://files.catbox.moe/6qycfr.mp4"
+  },
+  {
+    "id": "cbvip-prj-6",
+    "db_id": 6,
+    "title": "IDEA - START BRAVO",
+    "folder_name": "IDEA - START BRAVO",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_6.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-6",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/idea_start_bravo.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - IDEA - START BRAVO.pdf",
+        "path": "projeler/IDEA - START BRAVO/SUNUM - IDEA - START BRAVO.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-7",
+    "db_id": 7,
+    "title": "MONZA EYLÜL CONCEPT - VIP ÇAKIRLAR",
+    "folder_name": "MONZA EYLÜL CONCEPT - VIP ÇAKIRLAR",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_7.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-7",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/monza_eylul_concept.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - VIP ÇAKIRLAR.pdf",
+        "path": "projeler/MONZA EYLÜL CONCEPT - VIP ÇAKIRLAR/SUNUM - VIP ÇAKIRLAR.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-8",
+    "db_id": 8,
+    "title": "MONZA MOON",
+    "folder_name": "MONZA MOON",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_8.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-8",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/monza_moon.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - MONZA MOON.pdf",
+        "path": "projeler/MONZA MOON/SUNUM - MONZA MOON.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-9",
+    "db_id": 9,
+    "title": "NARÇİN RONYA CITY - 1 (VIP WEST)",
+    "folder_name": "NARÇİN RONYA CITY - 1 (VIP WEST)",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_9.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-9",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/narcin_ronya_city.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - NARÇIN RONYA CITY 1.pdf",
+        "path": "projeler/NARÇİN RONYA CITY - 1 (VIP WEST)/SUNUM - NARÇIN RONYA CITY 1.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-10",
+    "db_id": 10,
+    "title": "NEVA - START BRAVO",
+    "folder_name": "NEVA - START BRAVO",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_10.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-10",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/neva_start_bravo.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - NEVA - START BRAVO.pdf",
+        "path": "projeler/NEVA - START BRAVO/SUNUM - NEVA - START BRAVO.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-11",
+    "db_id": 11,
+    "title": "S POINT - VIP SARAY",
+    "folder_name": "S POINT - VIP SARAY",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_11.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-11",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/spoint.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - S POINT.pdf",
+        "path": "projeler/S POINT - VIP SARAY/SUNUM - S POINT.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-12",
+    "db_id": 12,
+    "title": "TRIOLE YAŞAM",
+    "folder_name": "TRIOLE YAŞAM",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_12.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-12",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/triole_yasam.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - TRIOLE YAŞAM.pdf",
+        "path": "projeler/TRIOLE YAŞAM/SUNUM - TRIOLE YAŞAM.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-13",
+    "db_id": 13,
+    "title": "VERDE MONA",
+    "folder_name": "VERDE MONA",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_13.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-13",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/verde_mona.mp4",
+    "presentations": [],
+    "has_presentation": false,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-14",
+    "db_id": 14,
+    "title": "VIP AKADEMİ",
+    "folder_name": "VIP AKADEMİ",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_14.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-14",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/vip_akademi.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - VIP AKADEMİ 1.pdf",
+        "path": "projeler/VIP AKADEMİ/SUNUM - VIP AKADEMİ 1.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-15",
+    "db_id": 15,
+    "title": "VIP AKADEMİ 2",
+    "folder_name": "VIP AKADEMİ 2",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_15.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-15",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/vip_akademi_2.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - VIP AKADEMİ 2.pdf",
+        "path": "projeler/VIP AKADEMİ 2/SUNUM - VIP AKADEMİ 2.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-16",
+    "db_id": 16,
+    "title": "VIP MARIN",
+    "folder_name": "VIP MARIN",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_16.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-16",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/vip_marin.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - VIP MARIN.pdf",
+        "path": "projeler/VIP MARIN/SUNUM - VIP MARIN.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-17",
+    "db_id": 17,
+    "title": "VIP YAŞAMKENT - GÖKDEMİR STAR",
+    "folder_name": "VIP YAŞAMKENT - GÖKDEMİR STAR",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_17.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-17",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/vip_yasamkent.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - VIP YAŞAMKENT.pdf",
+        "path": "projeler/VIP YAŞAMKENT - GÖKDEMİR STAR/SUNUM - VIP YAŞAMKENT.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-18",
+    "db_id": 18,
+    "title": "VIP YENİKENT",
+    "folder_name": "VIP YENİKENT",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_18.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-18",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/vip_yenikent.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - VIP YENİKENT.pdf",
+        "path": "projeler/VIP YENİKENT/SUNUM - VIP YENİKENT.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-19",
+    "db_id": 19,
+    "title": "VIP ÇAKIRLAR",
+    "folder_name": "VIP ÇAKIRLAR",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_19.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-19",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/vip_cakirlar.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - VIP ÇAKIRLAR.pdf",
+        "path": "projeler/VIP ÇAKIRLAR/SUNUM - VIP ÇAKIRLAR.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-20",
+    "db_id": 20,
+    "title": "VIP ÜNİVERSİTE",
+    "folder_name": "VIP ÜNİVERSİTE",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_20.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-20",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/vip_universite.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - VIP UNIVERSITE.pdf",
+        "path": "projeler/VIP ÜNİVERSİTE/SUNUM - VIP UNIVERSITE.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-21",
+    "db_id": 21,
+    "title": "VIVA - START BRAVO",
+    "folder_name": "VIVA - START BRAVO",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_21.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-21",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/viva_start_bravo.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - VIVA - START BRAVO.pdf",
+        "path": "projeler/VIVA - START BRAVO/SUNUM - VIVA - START BRAVO.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  },
+  {
+    "id": "cbvip-prj-22",
+    "db_id": 22,
+    "title": "WM - PRIME",
+    "folder_name": "WM - PRIME",
+    "thumbnail": "/static/img/video_thumbs/video_thumb_22.jpg",
+    "cloud_video_url": "/stream/video/cbvip-prj-22",
+    "cdn_fallback_url": "https://cdn.cbvip.com/videos/wm_prime.mp4",
+    "presentations": [
+      {
+        "filename": "SUNUM - WM PRIME.pdf",
+        "path": "projeler/WM - PRIME/SUNUM - WM PRIME.pdf"
+      }
+    ],
+    "has_presentation": true,
+    "has_video": true
+  }
+]

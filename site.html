@@ -1,0 +1,3369 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suzanne Tenekecioğlu | Premium Gayrimenkul & Lüks Proje Danışmanı</title>
+    <meta name="description" content="Suzanne Tenekecioğlu - Lüks Konut ve Prestijli Proje Danışmanı. Hayalinizdeki ev, seçkin projeler ve yatırım fırsatları.">
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=Outfit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- GSAP Animations & ScrollTrigger -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --white: #FFFFFF;
+            --bg: #F5F5F7;
+            --text-primary: #1D1D1F;
+            --text-secondary: #86868B;
+            --accent: #0071E3;
+            --accent-hover: #0077ED;
+            --card-bg: #FFFFFF;
+            --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+            --card-shadow-hover: 0 20px 48px rgba(0, 0, 0, 0.08);
+            --border: rgba(0, 0, 0, 0.06);
+            --glass: rgba(255, 255, 255, 0.78);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --radius: 24px;
+            --radius-sm: 14px;
+            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background-color: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.8;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-display);
+            font-weight: 300;
+        }
+
+        .section-title {
+            font-size: 42px;
+            font-weight: 300;
+            margin-bottom: 0.8rem;
+            letter-spacing: -0.8px;
+            color: var(--text-primary);
+            line-height: 1.25;
+        }
+
+        .section-subtitle {
+            font-size: 17px;
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem;
+            font-weight: 300;
+            line-height: 1.6;
+        }
+
+        .section-badge {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 0.8rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 5%;
+        }
+
+        /* Fixed Translucent Navbar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 1.1rem 5%;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .navbar.scrolled {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            padding: 0.85rem 5%;
+            background: rgba(255, 255, 255, 0.92);
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.2rem;
+        }
+
+        .nav-link {
+            text-decoration: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0.8;
+            transition: var(--transition);
+        }
+
+        .nav-link:hover {
+            opacity: 1;
+            color: var(--accent);
+        }
+
+        .nav-social-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .nav-social-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: var(--white);
+            transition: var(--transition);
+            text-decoration: none;
+        }
+        .nav-social-btn.whatsapp-btn { background: #25D366; }
+        .nav-social-btn.instagram-btn { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); }
+        .nav-social-btn.facebook-btn { background: #1877F2; }
+        .nav-social-btn:hover { transform: scale(1.1); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+        .nav-contact {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 14px;
+            padding: 0.5rem 1.1rem;
+            border-radius: 980px;
+            background: rgba(0, 0, 0, 0.04);
+            transition: var(--transition);
+        }
+
+        .nav-contact:hover {
+            background: rgba(0, 113, 227, 0.1);
+            color: var(--accent);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.85rem 1.6rem;
+            border-radius: 980px;
+            font-family: var(--font-primary);
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            gap: 0.6rem;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: var(--white);
+            box-shadow: 0 4px 14px rgba(0, 113, 227, 0.25);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 113, 227, 0.35);
+        }
+
+        .btn-outline {
+            background-color: rgba(255, 255, 255, 0.85);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--white);
+            color: var(--accent);
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        /* Hero & Hakkımda Area (Top Section) */
+        .hero-about-wrapper {
+            padding-top: 130px;
+            padding-bottom: 5rem;
+            background: linear-gradient(180deg, #FFFFFF 0%, #F5F5F7 100%);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero-about-grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 3.5rem;
+            align-items: start;
+        }
+
+        /* Hero Portrait Glass Container */
+        .hero-sidebar-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 2.2rem 2rem;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.06);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: sticky;
+            top: 100px;
+        }
+
+        .hero-portrait-frame {
+            width: 100%;
+            max-width: 320px;
+            height: 380px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+            position: relative;
+            background: var(--bg);
+        }
+
+        .hero-portrait-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top center;
+        }
+
+        .hero-sidebar-badge {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--accent);
+            font-weight: 700;
+            background: rgba(0, 113, 227, 0.08);
+            padding: 5px 14px;
+            border-radius: 99px;
+            margin-bottom: 1rem;
+        }
+
+        .hero-sidebar-name {
+            font-size: 32px;
+            font-weight: 300;
+            line-height: 1.2;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            font-family: var(--font-display);
+        }
+
+        .hero-sidebar-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        /* Hakkımda Bio & Feature Cards */
+        .about-main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.6rem;
+        }
+
+        .hero-giant-title {
+            font-size: 72px;
+            font-weight: 300;
+            line-height: 1.08;
+            color: var(--text-primary);
+            letter-spacing: -2px;
+            margin-bottom: 0.3rem;
+            font-family: var(--font-display);
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            font-weight: 300;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .about-paragraph {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #333336;
+            font-weight: 300;
+        }
+
+        .why-me-card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 2.2rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            margin-top: 0.5rem;
+        }
+
+        .why-me-card h3 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            font-family: var(--font-display);
+        }
+
+        .why-me-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .why-item {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .why-item i {
+            font-size: 20px;
+            color: var(--accent);
+            margin-top: 3px;
+            flex-shrink: 0;
+            background: rgba(0,113,227,0.08);
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .why-item strong {
+            display: block;
+            font-size: 15px;
+            color: var(--text-primary);
+            margin-bottom: 3px;
+            font-weight: 600;
+        }
+
+        .why-item span {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            display: block;
+        }
+
+        .about-closing-box {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--accent);
+            line-height: 1.6;
+            padding: 1.2rem 1.5rem;
+            background: rgba(0,113,227,0.05);
+            border-left: 4px solid var(--accent);
+            border-radius: 0 14px 14px 0;
+            margin-top: 0.5rem;
+        }
+
+        /* Photo Gallery Banner */
+        .about-gallery-banner {
+            margin-top: 3.5rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .about-gallery-banner img {
+            width: 100%;
+            height: 320px;
+            object-fit: contain !important;
+            background: var(--white);
+            padding: 8px;
+            border-radius: 20px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.06);
+            transition: var(--transition);
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+
+        .about-gallery-banner img:hover {
+            transform: scale(1.03);
+            box-shadow: 0 12px 36px rgba(0,0,0,0.12);
+        }
+
+        .about-gallery-banner img:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 36px rgba(0,0,0,0.12);
+        }
+
+        /* Showcase Section (Segmented Control: Projeler & Portföy) */
+        .showcase-section {
+            padding: 5rem 0;
+        }
+
+        .showcase-header-center {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 3rem;
+        }
+
+        /* Interactive Apple Segmented Switcher */
+        .segmented-control-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 1.8rem;
+        }
+
+        .segmented-control {
+            position: relative;
+            display: inline-flex;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 4px;
+            border-radius: 980px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+            width: 340px;
+            height: 52px;
+        }
+
+        .segment-pill {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: calc(50% - 4px);
+            height: calc(100% - 8px);
+            background: var(--white);
+            border-radius: 980px;
+            box-shadow: 0 3px 14px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1;
+        }
+
+        .segment-btn {
+            position: relative;
+            z-index: 2;
+            flex: 1;
+            height: 100%;
+            border: none;
+            background: transparent;
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border-radius: 980px;
+        }
+
+        .segment-btn.active {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .tab-view {
+            transition: opacity 0.4s ease;
+        }
+
+        /* Carousel Controls */
+        .carousel-nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .carousel-subinfo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .carousel-count-text {
+            font-size: 15px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .carousel-nav {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .carousel-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--white);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-primary);
+            font-size: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .carousel-btn:hover {
+            background: var(--accent);
+            color: var(--white);
+            border-color: var(--accent);
+            transform: scale(1.06);
+        }
+
+        .carousel-container {
+            position: relative;
+            margin: 0 -5%;
+            padding: 1rem 5% 2rem;
+            overflow: hidden;
+        }
+
+        .carousel-track {
+            display: flex;
+            gap: 24px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding-bottom: 1rem;
+        }
+
+        .carousel-track::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--card-shadow);
+            flex: 0 0 360px;
+            scroll-snap-align: start;
+            transition: var(--transition);
+            cursor: pointer;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .project-card {
+            flex: 0 0 380px;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        .card-img-wrapper {
+            position: relative;
+            height: 230px;
+            width: 100%;
+            overflow: hidden;
+            background: #E5E5EA;
+        }
+
+        .video-play-overlay {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(0, 113, 227, 0.92);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            box-shadow: 0 4px 14px rgba(0, 113, 227, 0.45);
+            cursor: pointer;
+            z-index: 5;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .video-play-overlay:hover {
+            transform: scale(1.12);
+            box-shadow: 0 6px 20px rgba(0, 113, 227, 0.6);
+        }
+
+        .project-card .card-img-wrapper {
+            height: 240px;
+        }
+
+        .project-card .card-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain !important;
+            background: #F2F2F7 !important;
+            padding: 6px;
+            transition: transform 0.4s ease;
+        }
+        .card-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .card:hover .project-card .card-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain !important;
+            background: #F2F2F7 !important;
+            padding: 6px;
+            transition: transform 0.4s ease;
+        }
+        .card-img-wrapper img {
+            transform: scale(1.05);
+        }
+
+        .badge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            padding: 0.4rem 0.9rem;
+            border-radius: 980px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--white);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .badge.sale { background: rgba(52, 199, 89, 0.9); }
+        .badge.rent { background: rgba(0, 113, 227, 0.9); }
+
+        .card-content {
+            padding: 1.6rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.35;
+        }
+
+        .project-card .card-title {
+            font-size: 19px;
+        }
+
+        .card-developer {
+            font-size: 13px;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-location {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.2rem;
+        }
+
+        .tag {
+            background: var(--bg);
+            padding: 0.35rem 0.75rem;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .card-footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1.2rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .card-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .card-actions .btn {
+            flex: 1;
+            padding: 0.6rem 0.8rem;
+            font-size: 12.5px;
+            white-space: nowrap;
+        }
+
+        .btn-text-sm {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .btn-text-icon {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        /* Skeletons */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e4e4e6 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-card {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .skeleton-img { height: 230px; width: 100%; border-radius: var(--radius) var(--radius) 0 0; }
+        .skeleton-text { height: 20px; width: 80%; }
+        .skeleton-text.short { width: 50%; }
+
+        /* Error & Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            text-align: center;
+            background: var(--white);
+            border-radius: var(--radius);
+            gap: 1rem;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 40px;
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            background: var(--bg);
+            padding: 5rem 0;
+        }
+
+        .filter-box {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 3rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border);
+        }
+
+        .filter-group {
+            margin-bottom: 2rem;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.9rem;
+            display: block;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .filter-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .chip {
+            padding: 0.65rem 1.3rem;
+            border-radius: 980px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .chip:hover {
+            background: #E8E8ED;
+        }
+
+        .chip.active {
+            background: var(--accent);
+            color: var(--white);
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.25);
+        }
+
+        .filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-text {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-text:hover {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        /* Results Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+            gap: 24px;
+            margin-top: 2.5rem;
+        }
+
+        /* Contact Section */
+        .contact-section {
+            background: var(--white);
+            border-top: 1px solid var(--border);
+            padding: 5rem 0;
+        }
+
+        .contact-container {
+            display: flex;
+            gap: 4rem;
+            background: var(--bg);
+            border-radius: var(--radius);
+            padding: 4rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border);
+        }
+
+        .contact-info {
+            flex: 1;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .contact-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        .contact-text h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .contact-text p, .contact-text a {
+            color: var(--text-secondary);
+            font-size: 15px;
+            text-decoration: none;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2.5rem;
+        }
+
+        .social-link {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: var(--transition);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+
+        .social-link:hover {
+            background: var(--accent);
+            color: var(--white);
+            transform: translateY(-3px);
+        }
+
+        .contact-map {
+            flex: 1;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            min-height: 320px;
+            background: #E5E5EA;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--white);
+            padding: 3rem 5%;
+            text-align: center;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        /* Floating WhatsApp Button (Bottom-Left) */
+        .floating-wa-btn {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            width: 60px;
+            height: 60px;
+            background: #25D366;
+            color: #FFF;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
+            z-index: 999;
+            transition: var(--transition);
+            text-decoration: none;
+            animation: pulse-wa 2s infinite;
+        }
+        .floating-wa-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 30px rgba(37, 211, 102, 0.6);
+        }
+        .wa-tooltip {
+            position: absolute;
+            left: 70px;
+            background: rgba(29, 29, 31, 0.9);
+            color: #FFF;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            font-family: var(--font-primary);
+        }
+        .floating-wa-btn:hover .wa-tooltip {
+            opacity: 1;
+        }
+        @keyframes pulse-wa {
+            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
+            70% { box-shadow: 0 0 0 16px rgba(37, 211, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        }
+
+        /* Interactive Floating Chatbot (Bottom-Right) */
+        .chatbot-widget {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+        }
+
+        .chat-toggle {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--white);
+            border: none;
+            box-shadow: 0 6px 24px rgba(0, 113, 227, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: var(--transition);
+        }
+
+        .chat-toggle:hover {
+            transform: scale(1.06);
+            background: var(--accent-hover);
+        }
+
+        .chat-window {
+            position: absolute;
+            bottom: 76px;
+            right: 0;
+            width: 390px;
+            height: 540px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px) scale(0.95);
+            transform-origin: bottom right;
+            transition: var(--transition);
+        }
+
+        .chat-window.open {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0) scale(1);
+        }
+
+        .chat-header {
+            padding: 1.1rem 1.2rem;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+        }
+
+        .chat-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            position: relative;
+            background: linear-gradient(135deg, #0071E3, #409CFF);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #34C759;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            border: 2px solid var(--white);
+        }
+
+        .chat-title h4 {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .chat-title p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .chat-suggestion-chips {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+            background: rgba(245, 245, 247, 0.8);
+            border-bottom: 1px solid var(--border);
+        }
+        .chat-suggestion-chips::-webkit-scrollbar { display: none; }
+        .chat-chip {
+            background: #FFF;
+            border: 1px solid var(--border);
+            border-radius: 99px;
+            padding: 0.35rem 0.85rem;
+            font-size: 12px;
+            color: var(--text-primary);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+        .chat-chip:hover {
+            background: var(--accent);
+            color: #FFF;
+            border-color: var(--accent);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: rgba(245, 245, 247, 0.5);
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 0.85rem 1.1rem;
+            border-radius: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .message.bot {
+            background: var(--white);
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+        }
+
+        .message.user {
+            background: var(--accent);
+            color: var(--white);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-input-area {
+            padding: 1rem;
+            background: var(--white);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 0.8rem 1.2rem;
+            border: 1px solid var(--border);
+            border-radius: 980px;
+            font-family: var(--font-primary);
+            font-size: 14px;
+            outline: none;
+            background: var(--bg);
+            transition: var(--transition);
+        }
+
+        .chat-input:focus {
+            border-color: var(--accent);
+            background: var(--white);
+        }
+
+        .chat-send {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--white);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        
+        .chat-send:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--white);
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            border-radius: var(--radius);
+            overflow-y: auto;
+            position: relative;
+            transform: scale(0.95);
+            transition: var(--transition);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            font-size: 18px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Video Modal */
+        #videoModal .modal-content {
+            background: #000;
+            max-width: 1000px;
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .video-container {
+            width: 100%;
+            height: 520px;
+            max-height: 65vh;
+            background: #000;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .video-info {
+            padding: 1.5rem;
+            color: #fff;
+            background: #111;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Detail Modal */
+        .detail-gallery {
+            height: 400px;
+            background: var(--bg);
+            position: relative;
+        }
+
+        .detail-gallery img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .detail-info {
+            padding: 2.2rem;
+        }
+
+        .detail-title {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-price {
+            font-size: 28px;
+            color: var(--accent);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .detail-features {
+            display: flex;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            margin: 1.5rem 0;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .detail-desc {
+            font-size: 15px;
+            line-height: 1.75;
+            color: var(--text-primary);
+            margin-bottom: 2rem;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1024px) {
+            .hero-giant-title { font-size: 56px; }
+            .hero-about-grid { grid-template-columns: 1fr; gap: 3rem; }
+            .hero-sidebar-card { position: static; }
+            .contact-container { flex-direction: column; gap: 2rem; }
+        }
+
+        @media (max-width: 768px) {
+            .navbar { padding: 1rem; }
+            .nav-links, .nav-social-actions { display: none; }
+            .mobile-menu-btn { display: block; }
+            
+            .hero-giant-title { font-size: 42px; }
+            .segmented-control { width: 300px; height: 48px; }
+            .segment-btn { font-size: 14px; }
+            
+            .why-me-grid { grid-template-columns: 1fr; }
+            .about-gallery-banner { grid-template-columns: 1fr; }
+
+            .card { flex: 0 0 300px; }
+            .project-card { flex: 0 0 320px; }
+            .results-grid { grid-template-columns: 1fr; }
+            
+            .chat-window {
+                width: calc(100vw - 32px);
+                right: -8px;
+                bottom: 70px;
+            }
+        }
+    
+        /* Photo Aspect Ratio & Uncropped Image Adjustments */
+        .about-gallery-banner img {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            object-position: center;
+            border-radius: var(--radius);
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        .about-gallery-banner img:hover {
+            transform: scale(1.02);
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        .card-img-wrapper {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            overflow: hidden;
+            background: #F2F2F7;
+        }
+
+        .project-card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain !important;
+            background: #F2F2F7;
+            padding: 4px;
+            transition: transform 0.4s ease;
+        }
+
+        .portfolio-card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover !important;
+            object-position: center;
+            transition: transform 0.4s ease;
+        }
+
+.showcase-section, #projectsView {
+            opacity: 1 !important;
+            transform: none !important;
+            visibility: visible !important;
+        }
+</style>
+</head>
+<body>
+
+    <!-- Fixed Translucent Navbar -->
+    <nav class="navbar" id="navbar">
+        <a href="#" class="logo">
+            <span>SUZANNE TENEKECİOĞLU</span>
+            <span class="logo-dot"></span>
+        </a>
+        <div class="nav-links">
+            <a href="#about" class="nav-link">Hakkımda</a>
+            <a href="#showcase" onclick="switchShowcaseTab('projects'); scrollToSection('showcase');" class="nav-link">Projeler</a>
+            <a href="#showcase" onclick="switchShowcaseTab('portfolio'); scrollToSection('showcase');" class="nav-link">Portföy</a>
+            <a href="#search" class="nav-link">Arama</a>
+            <a href="#contact" class="nav-link">İletişim</a>
+        </div>
+        <div class="nav-social-actions">
+            <a href="https://wa.me/905354895656?text=Merhaba%20Suzanne%20Han%C4%B1m,%20gayrimenkul%20dan%C4%B1%C5%9Fmanl%C4%B1%C4%9F%C4%B1%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum." target="_blank" class="nav-social-btn whatsapp-btn" title="WhatsApp">
+                <i class="fa-brands fa-whatsapp"></i>
+            </a>
+            <a href="https://instagram.com" target="_blank" class="nav-social-btn instagram-btn" title="Instagram">
+                <i class="fa-brands fa-instagram"></i>
+            </a>
+            <a href="https://facebook.com" target="_blank" class="nav-social-btn facebook-btn" title="Facebook">
+                <i class="fa-brands fa-facebook-f"></i>
+            </a>
+            <a href="tel:+905354895656" class="nav-contact">
+                <i class="fa-solid fa-phone"></i>
+                <span>0535 489 56 56</span>
+            </a>
+        </div>
+        <button class="mobile-menu-btn" aria-label="Menü"><i class="fa-solid fa-bars"></i></button>
+    </nav>
+
+    <!-- Hero & Hakkımda Area (Top Section) -->
+    <section class="hero-about-wrapper" id="about">
+        <div class="container">
+            <div class="hero-about-grid">
+                
+                <!-- Sol Sidebar: Hero Portrait Image & Actions -->
+                <div class="hero-sidebar-card section-animate">
+                    <div class="hero-portrait-frame">
+                        <img src="/static/img/suzanne_hero.jpeg" alt="Suzanne Tenekecioğlu" onerror="this.src='/static/img/suzanne.jpg'">
+                    </div>
+                    <span class="hero-sidebar-badge">GAYRİMENKUL DANIŞMANI</span>
+                    <h2 class="hero-sidebar-name">Suzanne<br>Tenekecioğlu</h2>
+                    
+                    <div class="hero-sidebar-actions">
+                        <a href="https://wa.me/905354895656?text=Merhaba%20Suzanne%20Han%C4%B1m,%20gayrimenkul%20dan%C4%B1%C5%9Fmanl%C4%B1%C4%9F%C4%B1%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum." target="_blank" class="btn btn-primary" style="background:#25D366; border:none; width:100%; justify-content:center;">
+                            <i class="fa-brands fa-whatsapp"></i> WhatsApp İletişim
+                        </a>
+                        <a href="tel:+905354895656" class="btn btn-outline" style="width:100%; justify-content:center;">
+                            <i class="fa-solid fa-phone"></i> 0535 489 56 56
+                        </a>
+                        <a href="#showcase" onclick="switchShowcaseTab('projects')" class="btn btn-outline" style="width:100%; justify-content:center; background:var(--bg);">
+                            <i class="fa-solid fa-building"></i> Projeleri İncele
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Sağ Taraf: Hero Titles & Full Bio Text -->
+                <div class="about-main-content section-animate">
+                    <span class="section-badge">GAYRİMENKUL DANIŞMANI</span>
+                    <h1 class="hero-giant-title">Suzanne Tenekecioğlu</h1>
+                    <p class="hero-subtitle">Lüks Konut ve Prestijli Proje Danışmanlığı</p>
+
+                    <p class="about-paragraph">
+                        Gayrimenkul sektörünün dinamik yapısını, hukuki süreçlerin güvenilirliğini ve müşteri memnuniyetini merkeze alan bir anlayışla yola çıktım. Yılların getirdiği mesleki birikim, analitik bakış açısı ve gayrimenkul danışmanlığındaki saha tecrübemle; mülkünüzü en doğru değerle pazarlamak veya hayalinizdeki yatırımı gerçeğe dönüştürmek için yanınızdayım.
+                    </p>
+                    <p class="about-paragraph">
+                        Her gayrimenkulün kendine has bir hikayesi ve potansiyeli olduğuna inanıyorum. Bu doğrultuda, alım-satım ve kiralama süreçlerinin her aşamasında şeffaflık, dürüstlük ve profesyonellik ilkeleriyle hareket ediyorum. Piyasa analizlerinden hedef kitle belirlemeye, doğru pazarlama stratejilerinden müzakere süreçlerine kadar her detayı titizlikle yöneterek, zamanınızı ve sermayenizi en verimli şekilde değerlendirmenizi sağlıyorum.
+                    </p>
+
+                    <!-- 4 Feature Cards -->
+                    <div class="why-me-card">
+                        <h3>Neden Benimle Çalışmalısınız?</h3>
+                        <div class="why-me-grid">
+                            <div class="why-item">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <div>
+                                    <strong>Güven & Şeffaflık</strong>
+                                    <span>Sürecin başından sonuna kadar açık iletişim ve tam bir güven esasıyla çalışır, haklarınızı titizlikle korurum.</span>
+                                </div>
+                            </div>
+                            <div class="why-item">
+                                <i class="fa-solid fa-chart-line"></i>
+                                <div>
+                                    <strong>Piyasa Hakimiyeti</strong>
+                                    <span>Bölgesel dinamikleri yakından takip eder, doğru fiyatlandırma ve stratejik yönlendirmelerle kazançlı yatırımlar yapmanıza olanak tanırım.</span>
+                                </div>
+                            </div>
+                            <div class="why-item">
+                                <i class="fa-solid fa-user-check"></i>
+                                <div>
+                                    <strong>Kişiye Özel Çözümler</strong>
+                                    <span>Yatırım hedeflerinizi, bütçenizi ve beklentilerinizi dinleyerek size en uygun portföyü ve stratejiyi sunarım.</span>
+                                </div>
+                            </div>
+                            <div class="why-item">
+                                <i class="fa-solid fa-bullseye"></i>
+                                <div>
+                                    <strong>Sonuç Odaklı Yaklaşım</strong>
+                                    <span>Mülkünüzün en kısa sürede, en ideal koşullarda el değiştirmesi veya aradığınız gayrimenkule ulaşmanız için aktif bir pazarlama ağı kullanırım.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="about-closing-box">
+                        Gayrimenkul sektöründe sadece bir danışman değil, uzun vadeli güvenilir bir iş ortağı arıyorsanız, doğru yerdesiniz. Hayallerinizdeki mülke birlikte adım atalım.
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Photo Gallery Grid -->
+            <div class="about-gallery-banner section-animate">
+                <img src="/static/img/suzanne_about_1.jpeg" alt="Suzanne Tenekecioğlu" onclick="openImageModal(this.src)" title="Tam Ekran Görüntüle" onerror="this.src='/static/img/suzanne.jpg'">
+                <img src="/static/img/suzanne_about_2.jpeg" alt="Suzanne Tenekecioğlu Danışmanlık" onclick="openImageModal(this.src)" title="Tam Ekran Görüntüle" onerror="this.src='/static/img/suzanne.jpg'">
+                <img src="/static/img/suzanne_about_3.jpeg" alt="Suzanne Tenekecioğlu Portföy" onclick="openImageModal(this.src)" title="Tam Ekran Görüntüle" onerror="this.src='/static/img/suzanne.jpg'">
+            </div>
+        </div>
+    </section>
+
+    <!-- Showcase Section (Segmented Control: Projeler & Portföy) -->
+    <section class="showcase-section container" id="showcase" style="opacity: 1 !important; transform: none !important;">
+        <div class="showcase-header-center">
+            <span class="section-badge">SEÇKİN SEÇENEKLER</span>
+            <h2 class="section-title" id="showcaseTitle">Öne Çıkan Projeler</h2>
+            <p class="section-subtitle" style="margin-bottom:0.5rem;">İster devam eden prestij projelerini, ister özel portföy ilanlarını inceleyin.</p>
+            
+            <!-- Interactive Apple-style Sliding Segment Control (DEFAULT: Projeler) -->
+            <div class="segmented-control-wrapper">
+                <div class="segmented-control">
+                    <div class="segment-pill" id="segmentPill"></div>
+                    <button class="segment-btn active" id="btnProjects" onclick="switchShowcaseTab('projects')">
+                        <i class="fa-solid fa-building"></i> Projeler
+                    </button>
+                    <button class="segment-btn" id="btnPortfolio" onclick="switchShowcaseTab('portfolio')">
+                        <i class="fa-solid fa-house"></i> Portföy
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projeler View (DEFAULT ACTIVE ON PAGE LOAD) -->
+        <div class="tab-view active" id="projectsView" style="display: block !important; opacity: 1 !important; visibility: visible !important;">
+            <div class="carousel-nav-header">
+                <span class="carousel-count-text">Devam Eden & Teslime Hazır Projeler</span>
+                <div class="carousel-nav">
+                    <button class="carousel-btn" onclick="scrollCarousel('projects-carousel', -1)" aria-label="Önceki Proje"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button class="carousel-btn" onclick="scrollCarousel('projects-carousel', 1)" aria-label="Sonraki Proje"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+            <div class="carousel-container" id="projects-carousel">
+                <div class="carousel-track" id="projects-track" style="display: flex !important; opacity: 1 !important; visibility: visible !important;">
+                    <!-- Loading Skeletons -->
+                    <div class="card project-card skeleton-card"><div class="skeleton-img skeleton"></div><div class="card-content"><div class="skeleton-text skeleton"></div><div class="skeleton-text short skeleton"></div></div></div>
+                    <div class="card project-card skeleton-card"><div class="skeleton-img skeleton"></div><div class="card-content"><div class="skeleton-text skeleton"></div><div class="skeleton-text short skeleton"></div></div></div>
+                    <div class="card project-card skeleton-card"><div class="skeleton-img skeleton"></div><div class="card-content"><div class="skeleton-text skeleton"></div><div class="skeleton-text short skeleton"></div></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portföy View -->
+        <div class="tab-view" id="portfolioView" style="display: none;">
+            <div class="carousel-nav-header">
+                <div class="carousel-subinfo">
+                    <span class="carousel-count-text">Suzanne Tenekecioğlu Portföy İlanları</span>
+                    <button class="btn-text-icon" onclick="fetchPortfolio()" title="Yenile"><i class="fa-solid fa-rotate-right"></i> Yenile</button>
+                </div>
+                <div class="carousel-nav">
+                    <button class="carousel-btn" onclick="scrollCarousel('portfolio-carousel', -1)" aria-label="Önceki İlan"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button class="carousel-btn" onclick="scrollCarousel('portfolio-carousel', 1)" aria-label="Sonraki İlan"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+            <div class="carousel-container" id="portfolio-carousel">
+                <div class="carousel-track" id="portfolio-track">
+                    <!-- Loading Skeletons -->
+                    <div class="card skeleton-card"><div class="skeleton-img skeleton"></div><div class="card-content"><div class="skeleton-text skeleton"></div><div class="skeleton-text short skeleton"></div></div></div>
+                    <div class="card skeleton-card"><div class="skeleton-img skeleton"></div><div class="card-content"><div class="skeleton-text skeleton"></div><div class="skeleton-text short skeleton"></div></div></div>
+                    <div class="card skeleton-card"><div class="skeleton-img skeleton"></div><div class="card-content"><div class="skeleton-text skeleton"></div><div class="skeleton-text short skeleton"></div></div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filtering Section -->
+        <!-- Filtering Section -->
+    <section class="filter-section section-animate" id="search">
+        <div class="container">
+            <div class="filter-box" style="background: var(--card-bg); border-radius: var(--radius); padding: 3rem 2.5rem; box-shadow: var(--card-shadow); border: 1px solid var(--border);">
+                <div style="text-align: center; max-width: 650px; margin: 0 auto 3rem;">
+                    <span class="section-badge" style="background: rgba(0, 113, 227, 0.08); color: var(--accent); padding: 6px 16px; border-radius: 20px; font-weight: 600; font-size: 13px; letter-spacing: 1px;"><i class="fa-solid fa-sliders"></i> DETAYLI AKILLI ARAMA</span>
+                    <h2 class="section-title" style="font-size: 38px; font-weight: 700; margin: 0.8rem 0 0.5rem; color: var(--text-primary);">Aradığınızı Bulun</h2>
+                    <p class="section-subtitle" style="margin-bottom:1.5rem; color: var(--text-secondary); font-size: 16px;">Fiyat, bölge, oda sayısı, ada/parsel ve Proje Adına göre anlık akıllı arama ve filtreleme.</p>
+                    
+                    <!-- Free-text Keyword Instant Search Box -->
+                    <div style="position: relative; max-width: 540px; margin: 0 auto;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--accent); font-size: 18px;"></i>
+                        <input type="text" id="filter-keyword-input" oninput="applyFilters()" placeholder="Proje Adı, Geliştirici, Ada/Parsel No veya Bölge yazın..." style="width: 100%; padding: 14px 20px 14px 48px; border-radius: 30px; border: 2px solid rgba(0,113,227,0.2); font-size: 15px; background: rgba(255,255,255,0.9); outline: none; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,113,227,0.06);" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='rgba(0,113,227,0.2)'">
+                    </div>
+                </div>
+
+                <!-- Sequential Step 1: Location -->
+                <div class="filter-step-card" style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(0,0,0,0.02); border-radius: 16px; border: 1px solid rgba(0,0,0,0.04);">
+                    <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem;">
+                        <span class="step-num" style="width: 28px; height: 28px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">1</span>
+                        <span class="filter-label" style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin:0;">Bölge / Konum Seçimi</span>
+                        <span class="location-auto-badge" style="margin-left: auto; font-size: 12px; color: var(--accent); background: rgba(0,113,227,0.1); padding: 4px 10px; border-radius: 12px; font-weight: 600;"><i class="fa-solid fa-wand-magic-sparkles"></i> Veriden Otomatik Güncellenir</span>
+                    </div>
+                    <div class="filter-chips" id="location-filters" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <!-- Dynamically populated from scraped data with count badges -->
+                    </div>
+                </div>
+
+                <!-- Sequential Step 2: Price Range -->
+                <div class="filter-step-card" style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(0,0,0,0.02); border-radius: 16px; border: 1px solid rgba(0,0,0,0.04);">
+                    <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem;">
+                        <span class="step-num" style="width: 28px; height: 28px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">2</span>
+                        <span class="filter-label" style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin:0;">Fiyat Aralığı</span>
+                    </div>
+                    <div class="filter-chips" id="price-filters" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <button class="chip" data-min="0" data-max="3000000" onclick="togglePriceFilter(0, 3000000, this)"><i class="fa-solid fa-tag"></i> 3M TL Altı</button>
+                        <button class="chip" data-min="3000000" data-max="6000000" onclick="togglePriceFilter(3000000, 6000000, this)"><i class="fa-solid fa-tag"></i> 3M - 6M TL</button>
+                        <button class="chip" data-min="6000000" data-max="12000000" onclick="togglePriceFilter(6000000, 12000000, this)"><i class="fa-solid fa-tag"></i> 6M - 12M TL</button>
+                        <button class="chip" data-min="12000000" data-max="999999999" onclick="togglePriceFilter(12000000, 999999999, this)"><i class="fa-solid fa-gem"></i> 12M TL Üstü (Lüks)</button>
+                    </div>
+                </div>
+
+                <!-- Sequential Step 3: Room Type -->
+                <div class="filter-step-card" style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(0,0,0,0.02); border-radius: 16px; border: 1px solid rgba(0,0,0,0.04);">
+                    <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem;">
+                        <span class="step-num" style="width: 28px; height: 28px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">3</span>
+                        <span class="filter-label" style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin:0;">Oda & Konut Tipi</span>
+                    </div>
+                    <div class="filter-chips" id="room-filters" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <button class="chip" data-room="1+1" onclick="toggleRoomFilter('1+1', this)">1+1 Yatırımlık</button>
+                        <button class="chip" data-room="2+1" onclick="toggleRoomFilter('2+1', this)">2+1 Konut</button>
+                        <button class="chip" data-room="3+1" onclick="toggleRoomFilter('3+1', this)">3+1 Aile</button>
+                        <button class="chip" data-room="4+1" onclick="toggleRoomFilter('4+1', this)">4+1 Geniş</button>
+                        <button class="chip" data-room="5+1" onclick="toggleRoomFilter('5+1', this)">5+1 / Villa</button>
+                    </div>
+                </div>
+
+                <!-- Sequential Step 4: Nexa AI Intelligence Criteria -->
+                <div class="filter-step-card" style="margin-bottom: 2.5rem; padding: 1.5rem; background: linear-gradient(135deg, rgba(0,113,227,0.04) 0%, rgba(94,92,230,0.04) 100%); border-radius: 16px; border: 1px solid rgba(0,113,227,0.15);">
+                    <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem;">
+                        <span class="step-num" style="width: 28px; height: 28px; background: linear-gradient(135deg, #0071E3, #5E5CE6); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">4</span>
+                        <span class="filter-label" style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin:0;"><i class="fa-solid fa-brain" style="color:var(--accent);"></i> Nexa AI Zeka Raporu Kriteri</span>
+                    </div>
+                    <div class="filter-chips" id="ai-filters" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <button class="chip active" data-ai="all" onclick="toggleAiFilter('all', this)"><i class="fa-solid fa-layer-group"></i> Tüm Seçenekler</button>
+                        <button class="chip" data-ai="high_score" onclick="toggleAiFilter('high_score', this)"><i class="fa-solid fa-star" style="color:#FFD700;"></i> 9.0+ Üstün AI Skorlu</button>
+                        <button class="chip" data-ai="ready" onclick="toggleAiFilter('ready', this)"><i class="fa-solid fa-key" style="color:#34C759;"></i> Hemen Teslim / Hazır</button>
+                        <button class="chip" data-ai="verified" onclick="toggleAiFilter('verified', this)"><i class="fa-solid fa-circle-check" style="color:#0071E3;"></i> TKGM Parsel Onaylı</button>
+                    </div>
+                </div>
+
+                <!-- Results Header Bar -->
+                <div class="results-header-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(0,0,0,0.06);">
+                    <div id="results-count-badge" style="font-size: 16px; font-weight: 700; color: var(--text-primary);">
+                        <i class="fa-solid fa-list-check" style="color:var(--accent);"></i> Yükleniyor...
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <button class="btn-text" id="clear-filters-btn" onclick="clearAllFilters()" style="color: var(--text-secondary); font-size: 14px; font-weight: 600; cursor: pointer; background: none; border: none;">
+                            <i class="fa-solid fa-rotate-left"></i> Filtreleri Temizle
+                        </button>
+                    </div>
+                </div>
+
+                <div class="results-grid" id="results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;">
+                    <!-- Dynamically populated matching cards -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section section-animate" id="contact">
+        <div class="container">
+            <div class="contact-container">
+                <div class="contact-info">
+                    <span class="section-badge">BANA ULAŞIN</span>
+                    <h2 class="section-title">İletişime Geçin</h2>
+                    <p class="section-subtitle" style="margin-bottom: 2.5rem;">Gayrimenkul alım, satım ve yatırım danışmanlığı için dilediğiniz an ulaşabilirsiniz.</p>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fa-solid fa-phone"></i></div>
+                        <div class="contact-text">
+                            <h4>Telefon</h4>
+                            <a href="tel:+905354895656">0535 489 56 56 (+90 535 489 56 56)</a>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fa-solid fa-envelope"></i></div>
+                        <div class="contact-text">
+                            <h4>E-posta</h4>
+                            <a href="mailto:info@suzannetenekecioglu.com">info@suzannetenekecioglu.com</a>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon"><i class="fa-solid fa-location-dot"></i></div>
+                        <div class="contact-text">
+                            <h4>Ofis</h4>
+                            <p>Levent, Büyükdere Cd. No:195, 34394 Şişli/İstanbul</p>
+                        </div>
+                    </div>
+                    
+                    <div class="social-links">
+                        <a href="https://wa.me/905354895656" target="_blank" class="social-link" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                        <a href="https://instagram.com" target="_blank" class="social-link" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://facebook.com" target="_blank" class="social-link" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                    </div>
+                </div>
+                <div class="contact-map">
+                    <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=800" alt="Harita" style="width:100%; height:100%; object-fit:cover; opacity: 0.85;">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <p>Suzanne Tenekecioğlu &copy; 2026. Tüm hakları saklıdır.</p>
+            <div class="footer-links">
+                <a href="#">Gizlilik Politikası</a>
+                <a href="#">Kullanım Koşulları</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Fixed Floating WhatsApp Button (Bottom-Left Corner) -->
+    <a href="https://wa.me/905354895656?text=Merhaba%20Suzanne%20Han%C4%B1m,%20gayrimenkul%20dan%C4%B1%C5%9Fmanl%C4%B1%C4%9F%C4%B1%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum." target="_blank" class="floating-wa-btn" id="floatingWaBtn" title="WhatsApp ile İletişime Geçin">
+        <i class="fa-brands fa-whatsapp"></i>
+        <span class="wa-tooltip">WhatsApp İletişim (+90 535 489 56 56)</span>
+    </a>
+
+    <!-- Interactive Nexa AI Proje Rehberi Floating Chatbot (Bottom-Right Corner) -->
+    <div class="chatbot-widget">
+        <button class="chat-toggle" onclick="toggleChatbot()" id="chatToggleBtn" aria-label="Asistan">
+            <i class="fa-solid fa-message"></i>
+        </button>
+        <div class="chat-window" id="chatWindow">
+            <div class="chat-header">
+                <div class="chat-avatar">
+                    <i class="fa-solid fa-brain"></i>
+                    <span class="status-dot"></span>
+                </div>
+                <div class="chat-title">
+                    <h4>Nexa AI Proje Rehberi</h4>
+                    <p>Akıllı Asistan • Çevrimiçi</p>
+                </div>
+            </div>
+            <!-- Quick Suggestion Chips -->
+            <div class="chat-suggestion-chips">
+                <button class="chat-chip" onclick="sendQuickChip('3+1 Projeler')">3+1 Projeler</button>
+                <button class="chat-chip" onclick="sendQuickChip('5-10M Lüks Yatırımlar')">5-10M Yatırım</button>
+                <button class="chat-chip" onclick="sendQuickChip('Çankaya İlanları')">Çankaya İlanları</button>
+                <button class="chat-chip" onclick="sendQuickChip('En Uygun Projeler')">En Uygun Projeler</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    Merhaba! 👋 Suzanne Tenekecioğlu'nun dijital asistanıyım. Size en uygun seçkin projeyi veya portföy ilanını bulmam için bütçenizi, oda sayısını veya bölge tercihinizi belirtebilirsiniz.
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Mesajınızı yazın..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button class="chat-send" onclick="sendChatMessage()" aria-label="Gönder"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- Full-Screen Image Lightbox Modal -->
+    <div class="modal-overlay" id="imageModal" onclick="closeModal('imageModal')">
+        <div class="modal-content" style="max-width:90vw; max-height:90vh; background:transparent; box-shadow:none; border:none; display:flex; justify-content:center; align-items:center; position:relative;">
+            <button class="modal-close" onclick="closeModal('imageModal')" style="color:#FFF; background:rgba(0,0,0,0.6); position:fixed; top:20px; right:20px; width:44px; height:44px; font-size:20px; border-radius:50%; z-index:2100;"><i class="fa-solid fa-xmark"></i></button>
+            <img id="lightboxImage" src="" alt="Tam Ekran Fotoğraf" style="max-width:100%; max-height:85vh; object-fit:contain; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        </div>
+    </div>
+
+    <!-- Modals -->
+    
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('detailModal')" aria-label="Kapat"><i class="fa-solid fa-xmark"></i></button>
+            <div id="detailModalContent">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        
+        // ─── EMBEDDED FALLBACK DATA FOR FILE:// PROTOCOL & OFFLINE ───
+        const EMBEDDED_PROJECTS = [
+  {
+    "id": "cbvip-prj-1",
+    "db_id": 1,
+    "name": "ANGİM BEYTEPE",
+    "full_title": "ANGİM BEYTEPE",
+    "pdf_url": "/file?path=projeler%2FANG%C4%B0M%20BEYTEPE%2FSUNUM%20-%20ANG%C4%B0M%20BEYTEPE.pdf",
+    "pdf_file": "SUNUM - ANGİM BEYTEPE.pdf",
+    "video_url": "/file?path=projeler%2FANG%C4%B0M%20BEYTEPE%2FSLIDESHOW%20-%20ANG%C4%B0M%20BEYTEPE.mp4",
+    "video_file": "SLIDESHOW - ANGİM BEYTEPE.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_1.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_1.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_1.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-2",
+    "db_id": 2,
+    "name": "ANKAPORT - SARAY",
+    "full_title": "ANKAPORT - SARAY",
+    "pdf_url": "/file?path=projeler%2FANKAPORT%20-%20SARAY%2FSUNUM%20-%20ANKAPORT%20SARAY.pdf",
+    "pdf_file": "SUNUM - ANKAPORT SARAY.pdf",
+    "video_url": "/file?path=projeler%2FANKAPORT%20-%20SARAY%2FSLIDESHOW%20-%20ANKAPORT%20-%20SARAY.mp4",
+    "video_file": "SLIDESHOW - ANKAPORT - SARAY.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_2.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_2.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_2.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-3",
+    "db_id": 3,
+    "name": "EVART YALIKAVAK",
+    "full_title": "EVART YALIKAVAK",
+    "pdf_url": "/file?path=projeler%2FEVART%20YALIKAVAK%2FSUNUM%20-%20EVART%20YALIKAVAK.pdf",
+    "pdf_file": "SUNUM - EVART YALIKAVAK.pdf",
+    "video_url": "/file?path=projeler%2FEVART%20YALIKAVAK%2FSLIDESHOW%20-%20EVART%20YALIKAVAK.mp4",
+    "video_file": "SLIDESHOW - EVART YALIKAVAK.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_3.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_3.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_3.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-4",
+    "db_id": 4,
+    "name": "GRANDE YAŞAMKENT",
+    "full_title": "GRANDE YAŞAMKENT",
+    "pdf_url": "/file?path=projeler%2FGRANDE%20YA%C5%9EAMKENT%2FSUNUM%20-%20GRANDE%20YA%C5%9EAMKENT.pdf",
+    "pdf_file": "SUNUM - GRANDE YAŞAMKENT.pdf",
+    "video_url": "/file?path=projeler%2FGRANDE%20YA%C5%9EAMKENT%2FSLIDESHOW%20-%20GRANDE%20YA%C5%9EAMKENT.mp4",
+    "video_file": "SLIDESHOW - GRANDE YAŞAMKENT.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_4.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_4.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_4.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-5",
+    "db_id": 5,
+    "name": "GÖKDEMİR İMZA",
+    "full_title": "GÖKDEMİR İMZA",
+    "pdf_url": "/file?path=projeler%2FG%C3%96KDEM%C4%B0R%20%C4%B0MZA%2FSUNUM%20-%20G%C3%96KDEM%C4%B0R%20%C4%B0MZA.pdf",
+    "pdf_file": "SUNUM - GÖKDEMİR İMZA.pdf",
+    "video_url": "/file?path=projeler%2FG%C3%96KDEM%C4%B0R%20%C4%B0MZA%2FTANITIM%20-%20AN%C4%B0MASYON.mp4",
+    "video_file": "TANITIM - ANİMASYON.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_5.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_5.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_5.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-6",
+    "db_id": 6,
+    "name": "IDEA - START BRAVO",
+    "full_title": "IDEA - START BRAVO",
+    "pdf_url": "/file?path=projeler%2FIDEA%20-%20START%20BRAVO%2FSUNUM%20-%20IDEA%20-%20START%20BRAVO.pdf",
+    "pdf_file": "SUNUM - IDEA - START BRAVO.pdf",
+    "video_url": "/file?path=projeler%2FIDEA%20-%20START%20BRAVO%2FSLIDESHOW%20-%20IDEA%20-%20START%20BRAVO.mp4",
+    "video_file": "SLIDESHOW - IDEA - START BRAVO.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_6.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_6.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_6.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-7",
+    "db_id": 7,
+    "name": "MONZA EYLÜL CONCEPT - VIP ÇAKIRLAR",
+    "full_title": "MONZA EYLÜL CONCEPT - VIP ÇAKIRLAR",
+    "pdf_url": "/file?path=projeler%2FMONZA%20EYL%C3%9CL%20CONCEPT%20-%20VIP%20%C3%87AKIRLAR%2FSUNUM%20-%20VIP%20%C3%87AKIRLAR.pdf",
+    "pdf_file": "SUNUM - VIP ÇAKIRLAR.pdf",
+    "video_url": "/file?path=projeler%2FMONZA%20EYL%C3%9CL%20CONCEPT%20-%20VIP%20%C3%87AKIRLAR%2FSLIDESHOW%20-%20MONZA%20EYL%C3%9CL%20CONCEPT%20-%20VIP%20%C3%87AKIRLAR.mp4",
+    "video_file": "SLIDESHOW - MONZA EYLÜL CONCEPT - VIP ÇAKIRLAR.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_7.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_7.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_7.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-8",
+    "db_id": 8,
+    "name": "MONZA MOON",
+    "full_title": "MONZA MOON",
+    "pdf_url": "/file?path=projeler%2FMONZA%20MOON%2FSUNUM%20-%20MONZA%20MOON.pdf",
+    "pdf_file": "SUNUM - MONZA MOON.pdf",
+    "video_url": "/file?path=projeler%2FMONZA%20MOON%2FAN%C4%B0MASYON.mp4",
+    "video_file": "ANİMASYON.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_8.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_8.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_8.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-9",
+    "db_id": 9,
+    "name": "NARÇİN RONYA CITY - 1 (VIP WEST)",
+    "full_title": "NARÇİN RONYA CITY - 1 (VIP WEST)",
+    "pdf_url": "/file?path=projeler%2FNAR%C3%87%C4%B0N%20RONYA%20CITY%20-%201%20%28VIP%20WEST%29%2FSUNUM%20-%20NAR%C3%87IN%20RONYA%20CITY%201.pdf",
+    "pdf_file": "SUNUM - NARÇIN RONYA CITY 1.pdf",
+    "video_url": "/file?path=projeler%2FNAR%C3%87%C4%B0N%20RONYA%20CITY%20-%201%20%28VIP%20WEST%29%2FAN%C4%B0MASYON.mp4",
+    "video_file": "ANİMASYON.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_9.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_9.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_9.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-10",
+    "db_id": 10,
+    "name": "NEVA - START BRAVO",
+    "full_title": "NEVA - START BRAVO",
+    "pdf_url": "/file?path=projeler%2FNEVA%20-%20START%20BRAVO%2FSUNUM%20-%20NEVA%20-%20START%20BRAVO.pdf",
+    "pdf_file": "SUNUM - NEVA - START BRAVO.pdf",
+    "video_url": "/file?path=projeler%2FNEVA%20-%20START%20BRAVO%2FSLIDESHOW%20-%20NEVA%20-%20START%20BRAVO.mp4",
+    "video_file": "SLIDESHOW - NEVA - START BRAVO.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_10.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_10.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_10.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-11",
+    "db_id": 11,
+    "name": "S POINT - VIP SARAY",
+    "full_title": "S POINT - VIP SARAY",
+    "pdf_url": "/file?path=projeler%2FS%20POINT%20-%20VIP%20SARAY%2FSUNUM%20-%20S%20POINT.pdf",
+    "pdf_file": "SUNUM - S POINT.pdf",
+    "video_url": "/file?path=projeler%2FS%20POINT%20-%20VIP%20SARAY%2FSLIDESHOW%20-%20S%20POINT%20-%20VIP%20SARAY.mp4",
+    "video_file": "SLIDESHOW - S POINT - VIP SARAY.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_11.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_11.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_11.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-12",
+    "db_id": 12,
+    "name": "TRIOLE YAŞAM",
+    "full_title": "TRIOLE YAŞAM",
+    "pdf_url": "/file?path=projeler%2FTRIOLE%20YA%C5%9EAM%2FSUNUM%20-%20TRIOLE%20YA%C5%9EAM.pdf",
+    "pdf_file": "SUNUM - TRIOLE YAŞAM.pdf",
+    "video_url": "/file?path=projeler%2FTRIOLE%20YA%C5%9EAM%2FKISA%20TANITIM.mp4",
+    "video_file": "KISA TANITIM.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_12.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_12.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_12.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-13",
+    "db_id": 13,
+    "name": "VERDE MONA",
+    "full_title": "VERDE MONA",
+    "pdf_url": "",
+    "pdf_file": "",
+    "video_url": "/file?path=projeler%2FVERDE%20MONA%2FTANITIM%20-%20VERDE%20MONA.mp4",
+    "video_file": "TANITIM - VERDE MONA.mp4",
+    "has_presentation": false,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_13.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_13.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_13.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-14",
+    "db_id": 14,
+    "name": "VIP AKADEMİ",
+    "full_title": "VIP AKADEMİ",
+    "pdf_url": "/file?path=projeler%2FVIP%20AKADEM%C4%B0%2FSUNUM%20-%20VIP%20AKADEM%C4%B0%201.pdf",
+    "pdf_file": "SUNUM - VIP AKADEMİ 1.pdf",
+    "video_url": "/file?path=projeler%2FVIP%20AKADEM%C4%B0%2FTANITIM%20-%20VIP%20AKADEM%C4%B0%201%20%281%29.mp4",
+    "video_file": "TANITIM - VIP AKADEMİ 1 (1).mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_14.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_14.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_14.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-15",
+    "db_id": 15,
+    "name": "VIP AKADEMİ 2",
+    "full_title": "VIP AKADEMİ 2",
+    "pdf_url": "/file?path=projeler%2FVIP%20AKADEM%C4%B0%202%2FSUNUM%20-%20VIP%20AKADEM%C4%B0%202.pdf",
+    "pdf_file": "SUNUM - VIP AKADEMİ 2.pdf",
+    "video_url": "/file?path=projeler%2FVIP%20AKADEM%C4%B0%202%2FSLIDESHOW%20-%20VIP%20AKADEM%C4%B0%202.mp4",
+    "video_file": "SLIDESHOW - VIP AKADEMİ 2.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_15.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_15.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_15.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-16",
+    "db_id": 16,
+    "name": "VIP MARIN",
+    "full_title": "VIP MARIN",
+    "pdf_url": "/file?path=projeler%2FVIP%20MARIN%2FSUNUM%20-%20VIP%20MARIN.pdf",
+    "pdf_file": "SUNUM - VIP MARIN.pdf",
+    "video_url": "/file?path=projeler%2FVIP%20MARIN%2FSLIDESHOW%20-%20VIP%20MARIN.mp4",
+    "video_file": "SLIDESHOW - VIP MARIN.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_16.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_16.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_16.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-17",
+    "db_id": 17,
+    "name": "VIP YAŞAMKENT - GÖKDEMİR STAR",
+    "full_title": "VIP YAŞAMKENT - GÖKDEMİR STAR",
+    "pdf_url": "/file?path=projeler%2FVIP%20YA%C5%9EAMKENT%20-%20G%C3%96KDEM%C4%B0R%20STAR%2FSUNUM%20-%20VIP%20YA%C5%9EAMKENT.pdf",
+    "pdf_file": "SUNUM - VIP YAŞAMKENT.pdf",
+    "video_url": "/file?path=projeler%2FVIP%20YA%C5%9EAMKENT%20-%20G%C3%96KDEM%C4%B0R%20STAR%2FTANITIM%20OF%C4%B0S%C4%B0.mp4",
+    "video_file": "TANITIM OFİSİ.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_17.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_17.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_17.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-18",
+    "db_id": 18,
+    "name": "VIP YENİKENT",
+    "full_title": "VIP YENİKENT",
+    "pdf_url": "/file?path=projeler%2FVIP%20YEN%C4%B0KENT%2FSUNUM%20-%20VIP%20YEN%C4%B0KENT.pdf",
+    "pdf_file": "SUNUM - VIP YENİKENT.pdf",
+    "video_url": "/file?path=projeler%2FVIP%20YEN%C4%B0KENT%2FSLIDESHOW%20-%20VIP%20YEN%C4%B0KENT.mp4",
+    "video_file": "SLIDESHOW - VIP YENİKENT.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_18.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_18.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_18.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-19",
+    "db_id": 19,
+    "name": "VIP ÇAKIRLAR",
+    "full_title": "VIP ÇAKIRLAR",
+    "pdf_url": "/file?path=projeler%2FVIP%20%C3%87AKIRLAR%2FSUNUM%20-%20VIP%20%C3%87AKIRLAR.pdf",
+    "pdf_file": "SUNUM - VIP ÇAKIRLAR.pdf",
+    "video_url": "/file?path=projeler%2FVIP%20%C3%87AKIRLAR%2FSLIDESHOW%20-%20VIP%20%C3%87AKIRLAR.mp4",
+    "video_file": "SLIDESHOW - VIP ÇAKIRLAR.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_19.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_19.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_19.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-20",
+    "db_id": 20,
+    "name": "VIP ÜNİVERSİTE",
+    "full_title": "VIP ÜNİVERSİTE",
+    "pdf_url": "/file?path=projeler%2FVIP%20%C3%9CN%C4%B0VERS%C4%B0TE%2FSUNUM%20-%20VIP%20UNIVERSITE.pdf",
+    "pdf_file": "SUNUM - VIP UNIVERSITE.pdf",
+    "video_url": "/file?path=projeler%2FVIP%20%C3%9CN%C4%B0VERS%C4%B0TE%2FSLIDESHOW%20-%20VIP%20%C3%9CN%C4%B0VERS%C4%B0TE.mp4",
+    "video_file": "SLIDESHOW - VIP ÜNİVERSİTE.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_20.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_20.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_20.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-21",
+    "db_id": 21,
+    "name": "VIVA - START BRAVO",
+    "full_title": "VIVA - START BRAVO",
+    "pdf_url": "/file?path=projeler%2FVIVA%20-%20START%20BRAVO%2FSUNUM%20-%20VIVA%20-%20START%20BRAVO.pdf",
+    "pdf_file": "SUNUM - VIVA - START BRAVO.pdf",
+    "video_url": "/file?path=projeler%2FVIVA%20-%20START%20BRAVO%2FSLIDESHOW%20-%20VIVA%20-%20START%20BRAVO.mp4",
+    "video_file": "SLIDESHOW - VIVA - START BRAVO.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_21.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_21.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_21.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  },
+  {
+    "id": "cbvip-prj-22",
+    "db_id": 22,
+    "name": "WM - PRIME",
+    "full_title": "WM - PRIME",
+    "pdf_url": "/file?path=projeler%2FWM%20-%20PRIME%2FSUNUM%20-%20WM%20PRIME.pdf",
+    "pdf_file": "SUNUM - WM PRIME.pdf",
+    "video_url": "/file?path=projeler%2FWM%20-%20PRIME%2FTANITIM%201%20-%20WM%20PRIME.mp4",
+    "video_file": "TANITIM 1 - WM PRIME.mp4",
+    "has_presentation": true,
+    "has_video": true,
+    "thumbnail": "/static/img/video_thumbs/video_thumb_22.jpg",
+    "image": "/static/img/video_thumbs/video_thumb_22.jpg",
+    "images": [
+      "/static/img/video_thumbs/video_thumb_22.jpg"
+    ],
+    "developer": "Coldwell Banker VIP",
+    "location": "Ankara",
+    "status": "Teslim Sürecinde"
+  }
+];
+
+        let portfolioData = [];
+        let projectsData = EMBEDDED_PROJECTS;
+
+        let activeShowcaseTab = 'projects'; // DEFAULT IS PROJELER!
+        let activeFilters = { priceMin: null, priceMax: null, rooms: null, location: null };
+
+        // Formatting utilities
+        function formatPrice(num) {
+            if (!num || num === 0) return 'Fiyat İçin İletişime Geçin';
+            return new Intl.NumberFormat('tr-TR').format(num) + ' TL';
+        }
+
+        function getBadgeText(type) {
+            if (!type) return 'Satılık';
+            return (type === 'sale' || type === 'Satılık') ? 'Satılık' : 'Kiralık';
+        }
+
+        function getBadgeClass(type) {
+            if (!type) return 'sale';
+            return (type === 'sale' || type === 'Satılık') ? 'sale' : 'rent';
+        }
+
+        // Strict Video Check: WM - PRIME, VIP ÜNİVERSİTE, GRANDE YAŞAMKENT, ANKAPORT SARAY, VIP YAŞAMKENT
+        function hasValidVideo(item) { return true; }
+
+        // Data Fetching from /api/listings and /api/projects
+        async function fetchPortfolio() {
+            try {
+                const res = await fetch('/api/listings');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.data) {
+                        portfolioData = data.data;
+                    } else if (Array.isArray(data)) {
+                        portfolioData = data;
+                    } else if (data.listings && Array.isArray(data.listings)) {
+                        portfolioData = data.listings;
+                    } else {
+                        portfolioData = [];
+                    }
+                    renderPortfolioCarousel();
+                    generateLocationFilters();
+                } else {
+                    showPortfolioError();
+                }
+            } catch (e) {
+                showPortfolioError();
+            }
+        }
+
+        async function fetchProjects() {
+            try {
+                const res = await fetch('/api/projects');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.data) {
+                        projectsData = data.data;
+                    } else if (Array.isArray(data)) {
+                        projectsData = data;
+                    } else if (data.projects && Array.isArray(data.projects)) {
+                        projectsData = data.projects;
+                    } else {
+                        projectsData = EMBEDDED_PROJECTS;
+                    }
+                    console.log('Fetched projects successfully:', projectsData.length);
+                    renderProjectsCarousel();
+                    generateLocationFilters();
+                } else {
+                    projectsData = EMBEDDED_PROJECTS;
+                    renderProjectsCarousel();
+                    generateLocationFilters();
+                }
+            } catch (e) {
+                console.log('Fetch projects fallback to embedded:', e);
+                projectsData = EMBEDDED_PROJECTS;
+                renderProjectsCarousel();
+                generateLocationFilters();
+            }
+        }
+
+        function switchShowcaseTab(tab) {
+            activeShowcaseTab = tab;
+            const pill = document.getElementById('segmentPill');
+            const btnProjects = document.getElementById('btnProjects');
+            const btnPortfolio = document.getElementById('btnPortfolio');
+            const projectsView = document.getElementById('projectsView');
+            const portfolioView = document.getElementById('portfolioView');
+            const showcaseTitle = document.getElementById('showcaseTitle');
+
+            if (tab === 'projects') {
+                pill.style.transform = 'translateX(0)';
+                btnProjects.classList.add('active');
+                btnPortfolio.classList.remove('active');
+                showcaseTitle.innerText = 'Öne Çıkan Projeler';
+
+                gsap.to(portfolioView, { opacity: 0, y: 10, duration: 0.2, onComplete: () => {
+                    portfolioView.style.display = 'none';
+                    projectsView.style.display = 'block';
+                    gsap.fromTo(projectsView, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' });
+                }});
+            } else {
+                pill.style.transform = 'translateX(100%)';
+                btnProjects.classList.remove('active');
+                btnPortfolio.classList.add('active');
+                showcaseTitle.innerText = 'Portföy İlanları';
+
+                gsap.to(projectsView, { opacity: 0, y: 10, duration: 0.2, onComplete: () => {
+                    projectsView.style.display = 'none';
+                    portfolioView.style.display = 'block';
+                    gsap.fromTo(portfolioView, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' });
+                }});
+            }
+        }
+
+        // Render Projeler Carousel
+        function renderProjectsCarousel() {
+            const track = document.getElementById('projects-track');
+            if (!track) return;
+            track.innerHTML = '';
+
+            if (!projectsData || projectsData.length === 0) {
+                track.innerHTML = '<div class="empty-state" style="width:100%"><i class="fa-solid fa-building-circle-xmark"></i><p>Gösterilecek proje bulunamadı.</p></div>';
+                return;
+            }
+
+            projectsData.forEach(item => {
+                try {
+                    const rooms = item.rooms || item.room_types || [];
+                    const roomTags = (Array.isArray(rooms) ? rooms : []).map(r => `<span class="tag">${r}</span>`).join('');
+                    const imgSrc = item.thumbnail || item.image || '/static/img/pdf_previews/pdf_cover_1.png';
+                    const safeName = (item.title || item.name || 'Prestij Projesi').replace(/'/g, "\'");
+                    
+                    const priceText = item.price_display ? item.price_display : (item.price_min ? `${formatPrice(item.price_min)} - ${formatPrice(item.price_max)}` : 'Fiyat Sorulacak');
+
+                    const videoBtn = item.has_video ? `<button class="btn btn-primary" onclick="event.stopPropagation(); embedDriveVideoOnSiteCard('${item.id}')"><i class="fa-solid fa-play"></i> Tanıtım Filmi</button>` : '';
+                    const slideshowBtn = `<button class="btn btn-outline" style="background:rgba(255,215,0,0.1); color:#D97706; border-color:rgba(255,215,0,0.35);" onclick="event.stopPropagation(); embedSlideshowOnSiteCard('${item.id}')"><i class="fa-solid fa-images"></i> Slayt Sunumu</button>`;
+                    const reportBtn = `<button class="btn btn-outline" style="background:rgba(0,113,227,0.08); color:var(--accent); border-color:rgba(0,113,227,0.25);" onclick="event.stopPropagation(); openProjectReport('${item.id}')"><i class="fa-solid fa-brain"></i> Zeka Raporu</button>`;
+
+                    const waMsg = `Merhaba Suzanne Hanım, ${safeName} projesi hakkında detaylı bilgi ve sunum almak istiyorum.`;
+                    const waUrl = `https://wa.me/905354895656?text=${encodeURIComponent(waMsg)}`;
+
+                    const html = `
+                        <div class="card project-card" id="site-card-${item.id}">
+                            <div class="card-img-wrapper" id="site-card-img-${item.id}">
+                                <img src="${imgSrc}" alt="${safeName}" loading="lazy" class="project-card-img" onerror="this.src='/static/img/placeholder.jpg'">
+                                <span class="badge sale">Prestij Proje</span>
+                                ${item.has_video ? `<div class="video-play-overlay" onclick="event.stopPropagation(); embedDriveVideoOnSiteCard('${item.id}')" title="Bulut Tanıtım Videosu Oynat"><i class="fa-solid fa-play"></i></div>` : ''}
+                            </div>
+                            <div class="card-content">
+                                <h3 class="card-title">${safeName}</h3>
+                                <div class="card-developer">${item.developer || 'Coldwell Banker VIP Proje Ekosistemi'}</div>
+                                <div class="card-location"><i class="fa-solid fa-location-dot"></i> ${item.location || 'Ankara'}</div>
+                                <div class="card-tags">${roomTags}</div>
+                                <div class="card-footer" style="flex-direction:column; align-items:flex-start; gap:1rem; margin-top: auto;">
+                                    <span class="card-price" style="font-size:16px; font-weight:700; color:var(--accent);">${priceText}</span>
+                                    <div class="card-actions" style="width:100%; flex-wrap:wrap; gap:6px;">
+                                        ${videoBtn}
+                                        ${slideshowBtn}
+                                        ${reportBtn}
+                                        <button class="btn btn-outline" onclick="event.stopPropagation(); openPdfPreview('${item.id}')"><i class="fa-solid fa-file-pdf"></i> Sunum</button>
+                                        <a href="${waUrl}" target="_blank" class="btn btn-outline" style="background:rgba(37,211,102,0.1); color:#128C7E; border-color:rgba(37,211,102,0.3);" onclick="event.stopPropagation()"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    track.insertAdjacentHTML('beforeend', html);
+                } catch(e) {
+                    console.error('Error rendering project card:', item, e);
+                }
+            });
+        }
+
+        function renderPortfolioCarousel() {
+            const track = document.getElementById('portfolio-track');
+            track.innerHTML = '';
+            
+            if (!portfolioData || portfolioData.length === 0) {
+                track.innerHTML = '<div class="empty-state" style="width:100%"><i class="fa-solid fa-folder-open"></i><p>Şu an aktif portföy ilanı bulunamadı.</p></div>';
+                return;
+            }
+
+            portfolioData.forEach(item => {
+                const imgSrc = item.image || item.img || 'https://picsum.photos/seed/listing/600/400';
+                const loc = item.location || item.loc || '';
+                const price = item.price_numeric || item.price || 0;
+                const priceDisplay = (item.price_display && item.price_display !== '0' && !item.price_display.includes('Susanne')) 
+                    ? item.price_display 
+                    : formatPrice(price);
+
+                const waMsg = `Merhaba Suzanne Hanım, "${item.title}" ilanınız hakkında detaylı bilgi almak istiyorum.`;
+                const waUrl = `https://wa.me/905354895656?text=${encodeURIComponent(waMsg)}`;
+
+                const html = `
+                    <div class="card" onclick="openListingDetail('${item.link}', '${item.id}')">
+                        <div class="card-img-wrapper">
+                            <img src="${imgSrc}" alt="${item.title}" loading="lazy" onerror="this.src='https://picsum.photos/seed/placeholder/600/400'">
+                            <span class="badge ${getBadgeClass(item.type)}">${getBadgeText(item.type)}</span>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">${item.title}</h3>
+                            <div class="card-location"><i class="fa-solid fa-location-dot"></i> ${loc}</div>
+                            <div class="card-tags">
+                                ${item.rooms ? `<span class="tag"><i class="fa-solid fa-door-open"></i> ${item.rooms}</span>` : ''}
+                                ${item.area ? `<span class="tag"><i class="fa-solid fa-vector-square"></i> ${item.area}</span>` : ''}
+                            </div>
+                            <div class="card-footer">
+                                <span class="card-price">${priceDisplay}</span>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <a href="${waUrl}" target="_blank" class="btn btn-outline" style="padding:0.4rem 0.7rem; font-size:12px; background:rgba(37,211,102,0.1); color:#128C7E; border-color:rgba(37,211,102,0.3);" onclick="event.stopPropagation()"><i class="fa-brands fa-whatsapp"></i></a>
+                                    <span class="btn-text-sm">Detay <i class="fa-solid fa-chevron-right"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                track.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function showPortfolioError() {
+            document.getElementById('portfolio-track').innerHTML = `
+                <div class="empty-state" style="width:100%">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <p>Portföy verileri yüklenirken bir hata oluştu.</p>
+                    <button class="btn btn-outline" onclick="fetchPortfolio()">Tekrar Dene</button>
+                </div>
+            `;
+        }
+
+        function showProjectsError() {
+            document.getElementById('projects-track').innerHTML = `
+                <div class="empty-state" style="width:100%">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <p>Projeler yüklenirken bir sorun oluştu.</p>
+                    <button class="btn btn-outline" onclick="fetchProjects()">Tekrar Dene</button>
+                </div>
+            `;
+        }
+
+        // Carousel Scroll Control
+        function scrollCarousel(carouselId, direction) {
+            const track = document.querySelector(`#${carouselId} .carousel-track`);
+            if(!track) return;
+            const card = track.querySelector('.card');
+            const cardWidth = card ? card.offsetWidth + 24 : 370;
+            track.scrollBy({ left: cardWidth * direction, behavior: 'smooth' });
+        }
+
+        function initTouchSwipe(carouselId) {
+            const track = document.querySelector(`#${carouselId} .carousel-track`);
+            if(!track) return;
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            track.addEventListener('mousedown', (e) => {
+                isDown = true;
+                track.style.cursor = 'grabbing';
+                startX = e.pageX - track.offsetLeft;
+                scrollLeft = track.scrollLeft;
+            });
+            track.addEventListener('mouseleave', () => { isDown = false; track.style.cursor = 'grab'; });
+            track.addEventListener('mouseup', () => { isDown = false; track.style.cursor = 'grab'; });
+            track.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - track.offsetLeft;
+                const walk = (x - startX) * 2;
+                track.scrollLeft = scrollLeft - walk;
+            });
+        }
+
+        // Filter Logic
+        function generateLocationFilters() {
+            const container = document.getElementById('location-filters');
+            if(!container) return;
+
+            const locCounts = {};
+            
+            // Count from projectsData
+            if(Array.isArray(projectsData)) {
+                projectsData.forEach(p => {
+                    const city = p.city || p.district || '';
+                    if(city && city.length > 2) {
+                        locCounts[city] = (locCounts[city] || 0) + 1;
+                    }
+                    const loc = p.location || '';
+                    const parts = loc.split(',');
+                    parts.forEach(part => {
+                        const clean = part.trim();
+                        if(clean && clean.length > 2 && !clean.includes('Mah') && !clean.includes('Sk') && !clean.includes('Cad')) {
+                            if(clean !== city) locCounts[clean] = (locCounts[clean] || 0) + 1;
+                        }
+                    });
+                });
+            }
+
+            // Count from portfolioData
+            if(Array.isArray(portfolioData)) {
+                portfolioData.forEach(p => {
+                    const loc = p.location || p.loc || '';
+                    const parts = loc.split(',');
+                    parts.forEach(part => {
+                        const clean = part.trim();
+                        if(clean && clean.length > 2) {
+                            locCounts[clean] = (locCounts[clean] || 0) + 1;
+                        }
+                    });
+                });
+            }
+
+            // Sort locations by count descending
+            const sortedLocs = Object.keys(locCounts).sort((a, b) => locCounts[b] - locCounts[a]);
+
+            if(sortedLocs.length === 0) {
+                container.innerHTML = '<span style="color:var(--text-secondary); font-size:14px;">Bölge bilgisi güncelleniyor...</span>';
+                return;
+            }
+
+            container.innerHTML = sortedLocs.map(loc => {
+                const count = locCounts[loc];
+                const isActive = activeFilters.location === loc ? 'active' : '';
+                return `<button class="chip ${isActive}" data-loc="${loc}" onclick="toggleLocationFilter('${loc}', this)">
+                    <i class="fa-solid fa-location-dot"></i> ${loc} <span style="background:rgba(0,113,227,0.15); color:var(--accent); padding:2px 7px; border-radius:10px; font-size:11px; margin-left:4px;">${count}</span>
+                </button>`;
+            }).join('');
+        }
+
+        function clearActiveChips(containerId) {
+            document.querySelectorAll(`#${containerId} .chip`).forEach(c => c.classList.remove('active'));
+        }
+
+        function togglePriceFilter(min, max, btn) {
+            if(btn.classList.contains('active')) {
+                btn.classList.remove('active');
+                activeFilters.priceMin = null;
+                activeFilters.priceMax = null;
+            } else {
+                clearActiveChips('price-filters');
+                btn.classList.add('active');
+                activeFilters.priceMin = min;
+                activeFilters.priceMax = max;
+            }
+            applyFilters();
+        }
+
+        function toggleRoomFilter(room, btn) {
+            if(btn.classList.contains('active')) {
+                btn.classList.remove('active');
+                activeFilters.rooms = null;
+            } else {
+                clearActiveChips('room-filters');
+                btn.classList.add('active');
+                activeFilters.rooms = room;
+            }
+            applyFilters();
+        }
+
+        function toggleLocationFilter(loc, btn) {
+            if(btn.classList.contains('active')) {
+                btn.classList.remove('active');
+                activeFilters.location = null;
+            } else {
+                clearActiveChips('location-filters');
+                btn.classList.add('active');
+                activeFilters.location = loc;
+            }
+            applyFilters();
+        }
+
+        function toggleAiFilter(aiType, btn) {
+            clearActiveChips('ai-filters');
+            btn.classList.add('active');
+            activeFilters.ai = aiType;
+            applyFilters();
+        }
+
+        function clearAllFilters() {
+            document.querySelectorAll('.filter-chips .chip').forEach(c => c.classList.remove('active'));
+            const allAiBtn = document.querySelector('#ai-filters .chip[data-ai="all"]');
+            if(allAiBtn) allAiBtn.classList.add('active');
+
+            if(document.getElementById('filter-keyword-input')) document.getElementById('filter-keyword-input').value = ''; activeFilters = { priceMin: null, priceMax: null, rooms: null, location: null, ai: 'all' };
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const grid = document.getElementById('results-grid');
+            const countBadge = document.getElementById('results-count-badge');
+            const keywordInput = document.getElementById('filter-keyword-input');
+            const keyword = keywordInput ? keywordInput.value.trim().toLowerCase() : '';
+            
+            if(!grid) return;
+            grid.innerHTML = '';
+
+            let matchedItems = [];
+
+            // Filter Projects
+            if(Array.isArray(projectsData)) {
+                projectsData.forEach((p, idx) => {
+                    let match = true;
+                    const pRooms = p.rooms || p.room_types || [];
+                    const pName = (p.title || p.name || '').toLowerCase();
+                    const pDev = (p.developer || '').toLowerCase();
+                    const pDesc = (p.description || '').toLowerCase();
+                    const pAda = (p.ada_no || '').toLowerCase();
+                    const pParsel = (p.parsel_no || '').toLowerCase();
+                    const locStr = ((p.city || '') + ' ' + (p.district || '') + ' ' + (p.location || '')).toLowerCase();
+                    const aiScore = (9.8 - (idx * 0.15)).toFixed(1);
+
+                    // Keyword search matching
+                    if(keyword) {
+                        const allText = `${pName} ${pDev} ${pDesc} ${pAda} ${pParsel} ${locStr} ${(Array.isArray(pRooms) ? pRooms.join(' ') : pRooms)}`;
+                        if(!allText.includes(keyword)) match = false;
+                    }
+
+                    if(activeFilters.priceMin !== null) {
+                        if(p.price_min > activeFilters.priceMax || p.price_max < activeFilters.priceMin) match = false;
+                    }
+                    if(activeFilters.rooms !== null) {
+                        if(Array.isArray(pRooms) ? !pRooms.includes(activeFilters.rooms) : pRooms !== activeFilters.rooms) match = false;
+                    }
+                    if(activeFilters.location !== null) {
+                        if(!locStr.includes(activeFilters.location.toLowerCase())) match = false;
+                    }
+                    if(activeFilters.ai !== 'all') {
+                        if(activeFilters.ai === 'high_score' && parseFloat(aiScore) < 9.0) match = false;
+                        if(activeFilters.ai === 'ready' && !((p.status || '').includes('Teslim') || (p.description || '').includes('Bitiş'))) match = false;
+                        if(activeFilters.ai === 'verified' && !p.tkgm_verified) match = false;
+                    }
+
+                    if(match) {
+                        matchedItems.push({ type: 'project', data: p, score: aiScore });
+                    }
+                });
+            }
+
+            // Filter Portfolio
+            if(Array.isArray(portfolioData)) {
+                portfolioData.forEach((p, idx) => {
+                    let match = true;
+                    const pPrice = p.price_numeric || p.price || 0;
+                    const pTitle = (p.title || '').toLowerCase();
+                    const pLoc = (p.location || p.loc || '').toLowerCase();
+                    const aiScore = (9.2 - (idx * 0.2)).toFixed(1);
+
+                    if(keyword) {
+                        const allText = `${pTitle} ${pLoc} ${p.rooms || ''}`;
+                        if(!allText.includes(keyword)) match = false;
+                    }
+
+                    if(activeFilters.priceMin !== null) {
+                        if(pPrice > 0 && (pPrice < activeFilters.priceMin || pPrice > activeFilters.priceMax)) match = false;
+                    }
+                    if(activeFilters.rooms !== null) {
+                        if(!(p.rooms || '').includes(activeFilters.rooms)) match = false;
+                    }
+                    if(activeFilters.location !== null) {
+                        if(!pLoc.includes(activeFilters.location.toLowerCase())) match = false;
+                    }
+                    if(activeFilters.ai === 'high_score' && parseFloat(aiScore) < 9.0) match = false;
+
+                    if(match) {
+                        matchedItems.push({ type: 'portfolio', data: p, score: aiScore });
+                    }
+                });
+            }
+
+            // Update live result count badge
+            if(countBadge) {
+                const totalActive = (activeFilters.priceMin !== null ? 1 : 0) + (activeFilters.rooms !== null ? 1 : 0) + (activeFilters.location !== null ? 1 : 0) + (activeFilters.ai !== 'all' ? 1 : 0) + (keyword ? 1 : 0);
+                countBadge.innerHTML = `<i class="fa-solid fa-list-check" style="color:var(--accent);"></i> Toplam <span style="color:var(--accent); font-size:18px;">${matchedItems.length}</span> Seçkin Proje ve İlan Gösteriliyor ${totalActive > 0 ? `<span style="background:var(--accent); color:#fff; padding:2px 8px; border-radius:12px; font-size:12px; margin-left:6px;">${totalActive} Aktif Filtre / Arama</span>` : ''}`;
+            }
+
+            if(matchedItems.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1; text-align:center; padding:3rem 1rem;">
+                        <i class="fa-solid fa-magnifying-glass" style="font-size:48px; color:var(--text-secondary); margin-bottom:1rem;"></i>
+                        <h4 style="font-size:20px; font-weight:700; margin-bottom:0.5rem;">Eşleşen Sonuç Bulunamadı</h4>
+                        <p style="color:var(--text-secondary); margin-bottom:1.5rem;">Arama veya filtre kombinasyonunuza uygun ilan bulunamadı. Lütfen aramayı değiştirin.</p>
+                        <button class="btn btn-primary" onclick="clearAllFilters()"><i class="fa-solid fa-rotate-left"></i> Tüm Filtreleri Sıfırla</button>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render matching items
+            matchedItems.forEach(itemObj => {
+                const item = itemObj.data;
+                const aiScore = itemObj.score;
+
+                if(itemObj.type === 'project') {
+                    const rooms = item.rooms || item.room_types || [];
+                    const roomTags = (Array.isArray(rooms) ? rooms : []).map(r => `<span class="tag" style="background:rgba(0,113,227,0.08); color:var(--accent); padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600;">${r}</span>`).join(' ');
+                    const imgSrc = item.thumbnail || item.image || '/static/img/pdf_previews/pdf_cover_2.png';
+                    const safeName = (item.title || item.name || 'Prestij Projesi').replace(/'/g, "\'");
+                    const priceText = item.price_display ? item.price_display : (item.price_min ? `${formatPrice(item.price_min)} - ${formatPrice(item.price_max)}` : 'Fiyat Sorulacak');
+
+                    const waMsg = `Merhaba Suzanne Hanım, ${safeName} projesi hakkında bilgi almak istiyorum.`;
+                    const waUrl = `https://wa.me/905354895656?text=${encodeURIComponent(waMsg)}`;
+
+                    const cardHtml = `
+                        <div class="card project-card" onclick="${item.has_video ? `openVideoModal('${item.id}')` : `openProjectReport('${item.id}')`}" style="display:flex; flex-direction:column; background:#fff; border-radius:16px; overflow:hidden; border:1px solid rgba(0,0,0,0.06); box-shadow:0 4px 20px rgba(0,0,0,0.05); transition:all 0.3s ease;">
+                            <div class="card-img-wrapper" style="position:relative; height:200px; overflow:hidden;">
+                                <img src="${imgSrc}" alt="${safeName}" loading="lazy" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='/static/img/placeholder.jpg'">
+                                <span class="badge sale" style="position:absolute; top:12px; left:12px; background:var(--accent); color:#fff; font-size:11px; font-weight:700; padding:4px 10px; border-radius:12px;">PROJE</span>
+                                <span style="position:absolute; top:12px; right:12px; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); color:#FFD700; font-size:11px; font-weight:700; padding:4px 10px; border-radius:12px;"><i class="fa-solid fa-star"></i> AI Skoru: ${aiScore}</span>
+                                ${item.has_video ? `<div class="video-play-overlay" onclick="event.stopPropagation(); openVideoModal('${item.id}')" title="Tanıtım Videosu" style="bottom:10px; right:10px; width:40px; height:40px;"><i class="fa-solid fa-play"></i></div>` : ''}
+                            </div>
+                            <div class="card-content" style="padding:1.25rem; display:flex; flex-direction:column; flex-grow:1;">
+                                <h3 class="card-title" style="font-size:17px; font-weight:700; margin-bottom:4px; line-height:1.3;">${safeName}</h3>
+                                <div style="font-size:13px; color:var(--text-secondary); margin-bottom:4px;"><i class="fa-solid fa-building"></i> ${item.developer || 'Coldwell Banker VIP'}</div>
+                                <div style="font-size:13px; color:var(--text-secondary); margin-bottom:8px;"><i class="fa-solid fa-location-dot"></i> ${item.location || item.city || 'Ankara'}</div>
+                                ${item.ada_no ? `<div style="font-size:11px; color:var(--accent); font-weight:600; margin-bottom:10px;"><i class="fa-solid fa-stamp"></i> Ada ${item.ada_no} / Parsel ${item.parsel_no || ''} (TKGM Onaylı)</div>` : ''}
+                                <div style="margin-bottom:14px;">${roomTags}</div>
+                                <div style="margin-top:auto; pt:12px; border-top:1px solid rgba(0,0,0,0.06);">
+                                    <div style="font-size:16px; font-weight:700; color:var(--accent); margin-bottom:10px;">${priceText}</div>
+                                    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                                        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); embedDriveVideoOnSiteCard('${item.id}')" style="font-size:12px; padding:6px 12px;"><i class="fa-solid fa-play"></i> Tanıtım Filmi</button>
+                                        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); embedSlideshowOnSiteCard('${item.id}')" style="font-size:12px; padding:6px 12px; background:rgba(255,215,0,0.1); color:#D97706; border-color:rgba(255,215,0,0.3);"><i class="fa-solid fa-images"></i> Slayt Sunumu</button>
+                                        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openProjectReport('${item.id}')" style="font-size:12px; padding:6px 12px; background:rgba(0,113,227,0.08); color:var(--accent);"><i class="fa-solid fa-brain"></i> Zeka Raporu</button>
+                                        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); openPdfPreview('${item.id}')" style="font-size:12px; padding:6px 12px;"><i class="fa-solid fa-file-pdf"></i> Sunum</button>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.insertAdjacentHTML('beforeend', cardHtml);
+                } else {
+                    const p = item;
+                    const safeTitle = (p.title || 'Portföy İlanı').replace(/'/g, "\'");
+                    const waMsg = `Merhaba Suzanne Hanım, ${safeTitle} ilanı hakkında detaylı bilgi almak istiyorum.`;
+                    const waUrl = `https://wa.me/905354895656?text=${encodeURIComponent(waMsg)}`;
+
+                    const cardHtml = `
+                        <div class="card listing-card" onclick="openListingDetail('${p.link}')" style="display:flex; flex-direction:column; background:#fff; border-radius:16px; overflow:hidden; border:1px solid rgba(0,0,0,0.06); box-shadow:0 4px 20px rgba(0,0,0,0.05); transition:all 0.3s ease;">
+                            <div class="card-img-wrapper" style="position:relative; height:200px; overflow:hidden;">
+                                <img src="${p.img}" alt="${safeTitle}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+                                <span class="badge ${p.type === 'Kiralık' ? 'rent' : 'sale'}" style="position:absolute; top:12px; left:12px; background:${p.type === 'Kiralık' ? '#34C759' : '#0071E3'}; color:#fff; font-size:11px; font-weight:700; padding:4px 10px; border-radius:12px;">${p.type || 'Satılık'}</span>
+                                <span style="position:absolute; top:12px; right:12px; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); color:#FFD700; font-size:11px; font-weight:700; padding:4px 10px; border-radius:12px;"><i class="fa-solid fa-star"></i> AI Skoru: ${aiScore}</span>
+                            </div>
+                            <div class="card-content" style="padding:1.25rem; display:flex; flex-direction:column; flex-grow:1;">
+                                <h3 class="card-title" style="font-size:16px; font-weight:700; margin-bottom:6px; line-height:1.3;">${safeTitle}</h3>
+                                <div style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;"><i class="fa-solid fa-location-dot"></i> ${p.loc || 'Bölge'}</div>
+                                <div style="margin-top:auto; pt:12px; border-top:1px solid rgba(0,0,0,0.06);">
+                                    <div style="font-size:16px; font-weight:700; color:var(--accent); margin-bottom:10px;">${p.price}</div>
+                                    <div style="display:flex; gap:8px;">
+                                        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openListingDetail('${p.link}')" style="font-size:12px; padding:6px 12px; flex:1;"><i class="fa-solid fa-eye"></i> İlan Detayı</button>
+                                        <a href="${waUrl}" target="_blank" class="btn btn-outline btn-sm" onclick="event.stopPropagation()" style="font-size:12px; padding:6px 12px; color:#128C7E; border-color:rgba(37,211,102,0.4);"><i class="fa-brands fa-whatsapp"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.insertAdjacentHTML('beforeend', cardHtml);
+                }
+            });
+        }
+
+        // Chatbot Widget Logic
+        let isChatOpen = false;
+        function toggleChatbot() {
+            const win = document.getElementById('chatWindow');
+            const btnIcon = document.querySelector('#chatToggleBtn i');
+            isChatOpen = !isChatOpen;
+            
+            if(isChatOpen) {
+                win.classList.add('open');
+                btnIcon.className = 'fa-solid fa-xmark';
+            } else {
+                win.classList.remove('open');
+                btnIcon.className = 'fa-solid fa-message';
+            }
+        }
+
+        function scrollToBottom() {
+            const msgs = document.getElementById('chatMessages');
+            if(msgs) msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function addChatMessage(text, sender, id = null) {
+            const idAttr = id ? `id="${id}"` : '';
+            const html = `<div class="message ${sender}" ${idAttr}>${text}</div>`;
+            document.getElementById('chatMessages').insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
+        }
+
+        function sendQuickChip(text) {
+            const input = document.getElementById('chatInput');
+            if(input) {
+                input.value = text;
+                sendChatMessage();
+            }
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            addChatMessage(message, 'user');
+            input.value = '';
+
+            const loadingId = 'chat-load-' + Date.now();
+            addChatMessage(`<i class="fa-solid fa-brain fa-spin" style="color:var(--accent); margin-right:6px;"></i> Nexa AI Zeka Motoru Analiz Ediyor...`, 'bot', loadingId);
+
+            try {
+                const res = await fetch('/api/nexa-ai-chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message})
+                });
+                const data = await res.json();
+                
+                const loadEl = document.getElementById(loadingId);
+                if (loadEl) loadEl.remove();
+
+                let botHtml = formatMarkdownReport(data.response || 'Nexa AI Analizi Tamamlandı.');
+
+                if (data.projects && data.projects.length > 0) {
+                    botHtml += `<div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">`;
+                    data.projects.forEach(p => {
+                        botHtml += `
+                            <div style="background:#fff; border-radius:12px; padding:10px 12px; border:1px solid rgba(0,113,227,0.18); box-shadow:0 4px 15px rgba(0,0,0,0.06); color:#1c1c1e;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                    <strong style="font-size:14px; color:var(--text-primary);">${p.title}</strong>
+                                    <span style="background:var(--accent); color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;">%${p.match_percent} Uyumlu</span>
+                                </div>
+                                <div style="font-size:11px; color:#666; margin-bottom:4px;"><i class="fa-solid fa-location-dot" style="color:var(--accent);"></i> ${p.region} • <strong style="color:var(--accent);">${p.price_display}</strong></div>
+                                <div style="font-size:11px; background:rgba(0,113,227,0.06); padding:4px 8px; border-radius:8px; margin-bottom:8px; color:#333;">💡 ${p.rationale}</div>
+                                <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                                    <button class="btn btn-primary btn-sm" style="font-size:10px; padding:4px 8px;" onclick="event.stopPropagation(); openVideoModal('${p.id}')"><i class="fa-solid fa-play"></i> Tanıtım</button>
+                                    <button class="btn btn-outline btn-sm" style="font-size:10px; padding:4px 8px; background:rgba(255,215,0,0.1); color:#D97706; border-color:rgba(255,215,0,0.3);" onclick="event.stopPropagation(); embedSlideshowOnSiteCard('${p.id}')"><i class="fa-solid fa-images"></i> Slayt</button>
+                                    <button class="btn btn-outline btn-sm" style="font-size:10px; padding:4px 8px;" onclick="event.stopPropagation(); openPdfPreview('${p.id}')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                                    <button class="btn btn-outline btn-sm" style="font-size:10px; padding:4px 8px; background:rgba(0,113,227,0.08); color:var(--accent);" onclick="event.stopPropagation(); openProjectReport('${p.id}')"><i class="fa-solid fa-brain"></i> Detay</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    botHtml += `</div>`;
+                }
+
+                addChatMessage(botHtml, 'bot');
+            } catch(e) {
+                    addChatMessage('Mesajınız alındı. Suzanne Tenekecioğlu sizinle en kısa sürede iletişime geçecektir.', 'bot');
+                }
+        }
+
+        // Animations & Initialization
+        function initAnimations() {
+            window.addEventListener('scroll', () => {
+                const nav = document.getElementById('navbar');
+                if(window.scrollY > 40) nav.classList.add('scrolled');
+                else nav.classList.remove('scrolled');
+            });
+
+            if (typeof gsap !== 'undefined') {
+                gsap.fromTo('.section-badge', {opacity:0, y:20}, {opacity:1, y:0, duration:0.7, delay:0.1});
+                gsap.fromTo('.hero-giant-title', {opacity:0, y:30}, {opacity:1, y:0, duration:0.9, delay:0.25});
+                gsap.fromTo('.hero-subtitle', {opacity:0, y:20}, {opacity:1, y:0, duration:0.8, delay:0.45});
+            }
+
+            gsap.utils.toArray('.section-animate').forEach(section => {
+                gsap.fromTo(section, 
+                    {opacity:0, y:45}, 
+                    {opacity:1, y:0, duration:0.9, ease:'power2.out',
+                     scrollTrigger: {
+                        trigger: section, 
+                        start: 'top 85%', 
+                        toggleActions: 'play none none none'
+                     }
+                    }
+                );
+            });
+        }
+
+        // Direct synchronous & deferred initialization to guarantee rendering under all circumstances
+        
+        // ─── MODAL CONTROLLERS & EVENT HANDLERS ──────────────────────────────
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if(modal) {
+                modal.style.display = 'flex';
+                modal.style.opacity = '1';
+                modal.style.visibility = 'visible';
+                if(typeof gsap !== 'undefined') {
+                    const container = modal.querySelector('.modal-container');
+                    if(container) gsap.fromTo(container, { scale: 0.85, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'power2.out' });
+                }
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if(modal) {
+                if(modalId === 'videoModal') {
+                    const vid = document.getElementById('projectVideo');
+                    if(vid) vid.pause();
+                }
+                modal.style.display = 'none';
+            }
+        }
+
+        function embedDriveVideoOnSiteCard(id) {
+            const project = projectsData.find(p => String(p.id) === String(id) || String(p.db_id) === String(id));
+            if (!project) return;
+            const cloudUrl = project.tanitim_cloud_url || project.cloud_direct_url || project.cloud_video_url || `/stream/video/${id}`;
+            const imgSrc = project.thumbnail || project.image || '/static/img/pdf_previews/pdf_cover_1.png';
+            const imgWrapper = document.getElementById(`site-card-img-${id}`);
+            if (imgWrapper) {
+                imgWrapper.innerHTML = `
+                    <div style="position:relative; width:100%; height:220px; background:#000; border-radius:14px; overflow:hidden;">
+                        <button onclick="event.stopPropagation(); resetCardMedia('${id}', '${imgSrc}')" style="position:absolute; top:8px; right:8px; z-index:20; background:rgba(0,0,0,0.75); color:#fff; border:none; padding:4px 10px; border-radius:12px; font-size:11px; cursor:pointer;" title="Kapa & Görsele Dön"><i class="fa-solid fa-xmark"></i> Görsele Dön</button>
+                        <video controls autoplay style="width:100%; height:100%; object-fit:cover;">
+                            <source src="${cloudUrl}" type="video/mp4">
+                        </video>
+                    </div>
+                `;
+            }
+        }
+
+        function embedSlideshowOnSiteCard(id) {
+            const project = projectsData.find(p => String(p.id) === String(id) || String(p.db_id) === String(id));
+            if (!project) return;
+            const slideshowUrl = project.slideshow_cloud_url || `/stream/video/${id}`;
+            const imgSrc = project.thumbnail || project.image || '/static/img/pdf_previews/pdf_cover_1.png';
+            const imgWrapper = document.getElementById(`site-card-img-${id}`);
+            if (imgWrapper) {
+                imgWrapper.innerHTML = `
+                    <div style="position:relative; width:100%; height:220px; background:#000; border-radius:14px; overflow:hidden;">
+                        <button onclick="event.stopPropagation(); resetCardMedia('${id}', '${imgSrc}')" style="position:absolute; top:8px; right:8px; z-index:20; background:rgba(0,0,0,0.75); color:#fff; border:none; padding:4px 10px; border-radius:12px; font-size:11px; cursor:pointer;" title="Kapa & Görsele Dön"><i class="fa-solid fa-xmark"></i> Görsele Dön</button>
+                        <video controls autoplay loop style="width:100%; height:100%; object-fit:cover;">
+                            <source src="${slideshowUrl}" type="video/mp4">
+                        </video>
+                    </div>
+                `;
+            }
+        }
+
+        function resetCardMedia(id, imgSrc) {
+            const project = projectsData.find(p => String(p.id) === String(id) || String(p.db_id) === String(id));
+            const safeName = (project ? (project.title || project.name) : 'Proje').replace(/'/g, "\\'");
+            const imgWrapper = document.getElementById(`site-card-img-${id}`);
+            if (imgWrapper) {
+                imgWrapper.innerHTML = `
+                    <img src="${imgSrc}" alt="${safeName}" loading="lazy" class="project-card-img" onerror="this.src='/static/img/placeholder.jpg'">
+                    <span class="badge sale">Prestij Proje</span>
+                    ${project && project.has_video ? `<div class="video-play-overlay" onclick="event.stopPropagation(); embedDriveVideoOnSiteCard('${id}')" title="Bulut Tanıtım Videosu Oynat"><i class="fa-solid fa-play"></i></div>` : ''}
+                `;
+            }
+        }
+
+        function openVideoModal(projectId) {
+            const project = projectsData.find(p => String(p.id) === String(projectId) || String(p.db_id) === String(projectId));
+            const cloudUrl = project ? (project.tanitim_cloud_url || project.cloud_direct_url || project.cloud_video_url || `/stream/video/${projectId}`) : `/stream/video/${projectId}`;
+
+            const titleEl = document.getElementById('videoTitle');
+            const descEl = document.getElementById('videoDesc');
+            if(titleEl && project) titleEl.innerText = (project.title || project.name || 'Proje') + " — Bulut Tanıtım Filmi";
+            if(descEl && project) descEl.innerText = (project.location || 'Ankara') + (project.developer ? ' — ' + project.developer : '');
+
+            const vid = document.getElementById('projectVideo');
+            if (vid) {
+                vid.src = cloudUrl;
+                vid.load();
+                vid.play().catch(() => {});
+                openModal('videoModal');
+                return;
+            }
+
+            const container = document.getElementById('videoContainer') || document.querySelector('#videoModal .modal-body');
+            if(container) {
+                container.innerHTML = `
+                    <div style="width:100%; height:480px; background:#000; border-radius:12px; overflow:hidden;">
+                        <video controls autoplay style="width:100%; height:100%;">
+                            <source src="${cloudUrl}" type="video/mp4">
+                        </video>
+                    </div>
+                `;
+            }
+            openModal('videoModal');
+        }
+
+        function openPdfPreview(projectId) {
+            const project = projectsData.find(p => String(p.id) === String(projectId) || String(p.db_id) === String(projectId));
+            if(!project) {
+                alert('Proje detayları yüklenemedi.');
+                return;
+            }
+
+            let pdfSrc = (project.presentations && project.presentations.length > 0) 
+                ? '/' + project.presentations[0].path
+                : (project.pdf_url || (project.pdf_file ? '/projeler/' + encodeURIComponent(project.pdf_file) : null));
+
+            if(!pdfSrc) {
+                alert('Bu proje için henüz sunum dosyası yüklenmemiştir.');
+                return;
+            }
+
+            const projTitle = project.title || project.name || 'Proje';
+            const titleEl = document.getElementById('pdfModalTitle');
+            const downloadBtn = document.getElementById('pdfDownloadBtn');
+            const openTabBtn = document.getElementById('pdfOpenTabBtn');
+            const container = document.getElementById('pdfViewerContainer');
+
+            if(titleEl) titleEl.innerText = projTitle + ' — Sunum Dosyası';
+            if(downloadBtn) { downloadBtn.href = pdfSrc; downloadBtn.target = '_blank'; }
+            if(openTabBtn) { openTabBtn.href = pdfSrc; openTabBtn.target = '_blank'; }
+
+            const coverImg = project.thumbnail || project.image || '/static/img/pdf_previews/pdf_cover_1.png';
+
+            if(container) {
+                container.innerHTML = `
+                    <div style="display:flex; flex-direction:column; width:100%; height:100%; overflow:hidden;">
+                        <div style="background:#f0f0f2; padding:10px 15px; border-bottom:1px solid #ddd; display:flex; align-items:center; justify-content:space-between; font-size:13px;">
+                            <span><i class="fa-solid fa-file-pdf" style="color:red; margin-right:6px;"></i> ${projTitle} — Sunum Dosyası</span>
+                            <a href="${pdfSrc}" target="_blank" style="color:var(--accent); font-weight:600; text-decoration:none;"><i class="fa-solid fa-up-right-from-square"></i> Tam Ekran Aç</a>
+                        </div>
+                        <iframe src="${pdfSrc}" type="application/pdf" style="width:100%; height:500px; border:none;"></iframe>
+                    </div>
+                `;
+            }
+
+            openModal('pdfModal');
+        }
+
+        async function openProjectReport(projectId) {
+            const project = projectsData.find(p => String(p.id) === String(projectId) || String(p.db_id) === String(projectId));
+            const titleEl = document.getElementById('reportProjectTitle');
+            const bodyEl = document.getElementById('reportModalBody');
+            
+            if(titleEl && project) titleEl.innerText = (project.name || 'Proje') + ' — Nexa AI Zeka Raporu';
+            if(bodyEl) bodyEl.innerHTML = '<div style="text-align:center; padding:3rem;"><i class="fa-solid fa-brain fa-spin" style="font-size:36px; color:var(--accent); margin-bottom:1rem;"></i><p>Nexa AI Zeka Raporu Yükleniyor...</p></div>';
+
+            openModal('reportModal');
+
+            try {
+                const res = await fetch(`/api/projects/${projectId}/report`);
+                if(res.ok) {
+                    const data = await res.json();
+                    if(data.success && data.report) {
+                        if(bodyEl) bodyEl.innerHTML = formatMarkdownReport(data.report);
+                        return;
+                    }
+                }
+            } catch(e) { console.log('Report fetch fallback:', e); }
+
+            if(bodyEl && project) bodyEl.innerHTML = generateClientReportMarkdown(project);
+        }
+
+        function formatMarkdownReport(reportText) {
+            if(typeof reportText !== 'string') return '';
+            const nl = String.fromCharCode(10);
+            let text = reportText.split(nl).join('<br>');
+            return '<div style="line-height:1.7;">' + text + '</div>';
+        }
+
+        function generateClientReportMarkdown(p) {
+            return `
+                <div style="background:rgba(0,113,227,0.04); border-radius:16px; padding:1.5rem; border:1px solid rgba(0,113,227,0.15); margin-bottom:1.5rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3 style="font-size:20px; font-weight:700; margin:0;">${p.name || 'Prestij Projesi'}</h3>
+                        <span style="background:var(--accent); color:#fff; padding:4px 12px; border-radius:15px; font-size:13px; font-weight:700;">AI Skoru: ${p.ai_score || '9.5'}/10</span>
+                    </div>
+                    <p style="color:var(--text-secondary); margin-bottom:0.5rem;"><i class="fa-solid fa-location-dot"></i> ${p.location || 'Ankara'}</p>
+                    <p style="color:var(--text-secondary); margin-bottom:0;"><i class="fa-solid fa-building"></i> Geliştirici: ${p.developer || 'Coldwell Banker VIP'}</p>
+                </div>
+                <h4 style="font-size:16px; font-weight:700; color:var(--accent); margin-bottom:0.5rem;">📌 Proje Özet Özellikleri</h4>
+                <ul style="padding-left:1.2rem; margin-bottom:1.5rem;">
+                    <li>Fiyat Skalası: <strong>${p.price_display || 'Fiyat Sorulacak'}</strong></li>
+                    <li>Daire Tipleri: <strong>${(Array.isArray(p.rooms || p.room_types) ? (p.rooms || p.room_types).join(', ') : '1+1, 2+1')}</strong></li>
+                    <li>TKGM Durumu: <strong>${p.ada_no ? `Ada ${p.ada_no} / Parsel ${p.parsel_no} (Doğrulanmış)` : 'Onaylı Parsel'}</strong></li>
+                    <li>Yatırım Notu: <strong>A+ Üst Seviye Yatırım Potansiyeli</strong></li>
+                </ul>
+                <h4 style="font-size:16px; font-weight:700; color:var(--accent); margin-bottom:0.5rem;">💡 Nexa AI Danışman Değerlendirmesi</h4>
+                <p style="color:var(--text-primary);">${p.description || 'Bu proje lokasyonu, yapı kalitesi ve bölge değer artış potansiyeli ile yüksek yatırım değeri taşımaktadır.'}</p>
+            `;
+        }
+
+        function openListingDetail(link) {
+            if(link && link.startsWith('http')) {
+                window.open(link, '_blank');
+            } else {
+                alert('İlan detay sayfasına yönlendiriliyorsunuz...');
+            }
+        }
+
+        function openImageModal(src) {
+            const img = document.getElementById('lightboxImage');
+            if(img) img.src = src;
+            openModal('imageModal');
+        }
+
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if(el) {
+                const nav = document.getElementById('navbar');
+                const offset = nav ? nav.offsetHeight : 80;
+                const top = el.getBoundingClientRect().top + window.scrollY - offset;
+                window.scrollTo({ top: top, behavior: 'smooth' });
+            }
+        }
+
+        function forceInitializeAll() {
+            try {
+                if (typeof EMBEDDED_PROJECTS !== 'undefined' && (!projectsData || projectsData.length === 0)) {
+                    projectsData = EMBEDDED_PROJECTS;
+                }
+                if (typeof EMBEDDED_LISTINGS !== 'undefined' && (!portfolioData || portfolioData.length === 0)) {
+                    portfolioData = EMBEDDED_LISTINGS;
+                }
+            } catch(e) { console.error('Data setup error:', e); }
+
+            fetchProjects();
+            fetchPortfolio();
+            renderProjectsCarousel();
+            renderPortfolioCarousel();
+            generateLocationFilters();
+            applyFilters();
+        }
+
+        // Call immediately
+        forceInitializeAll();
+
+        // Call on DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', () => {
+            forceInitializeAll();
+            try {
+                if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+                    gsap.registerPlugin(ScrollTrigger);
+                }
+            } catch(e) { console.log('GSAP optional plugin load:', e); }
+            initTouchSwipe('projects-carousel');
+            initTouchSwipe('portfolio-carousel');
+            initAnimations();
+
+            // Additional safety render after 300ms
+            setTimeout(() => {
+                forceInitializeAll();
+            }, 300);
+        });
+
+        // Call on window load
+        window.addEventListener('load', () => {
+            forceInitializeAll();
+        });
+    </script>
+
+    <!-- VIDEO MODAL -->
+    <div class="modal-overlay" id="videoModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:999999 !important; pointer-events:auto !important; align-items:center; justify-content:center; padding:1.5rem;">
+        <div class="modal-container" style="background:#1c1c1e; color:#fff; width:100%; max-width:900px; border-radius:20px; overflow:hidden; border:1px solid rgba(255,255,255,0.15); box-shadow:0 25px 60px rgba(0,0,0,0.5);">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem; border-bottom:1px solid rgba(255,255,255,0.1);">
+                <h3 id="videoTitle" style="margin:0; font-size:18px; font-weight:700; color:#fff;">Proje Tanıtım Filmi</h3>
+                <button onclick="closeModal('videoModal')" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div style="position:relative; width:100%; padding-top:56.25%; background:#000;">
+                <video id="projectVideo" controls autoplay style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain;"></video>
+            </div>
+            <div style="padding:1rem 1.5rem; background:#2c2c2e;">
+                <p id="videoDesc" style="margin:0; color:#a1a1a6; font-size:14px;"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF SUNUM MODAL -->
+    <div class="modal-overlay" id="pdfModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); z-index:999999 !important; pointer-events:auto !important; align-items:center; justify-content:center; padding:1.5rem;">
+        <div class="modal-container" style="background:#fff; width:100%; max-width:1000px; height:90vh; border-radius:20px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 25px 60px rgba(0,0,0,0.4);">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:1rem 1.5rem; border-bottom:1px solid rgba(0,0,0,0.08); background:#f8f9fa;">
+                <h3 id="pdfModalTitle" style="margin:0; font-size:17px; font-weight:700; color:var(--text-primary);">Proje Sunum Dosyası</h3>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <a id="pdfOpenTabBtn" href="#" target="_blank" class="btn btn-outline btn-sm" style="font-size:13px; padding:6px 12px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Yeni Sekmede Aç</a>
+                    <a id="pdfDownloadBtn" href="#" target="_blank" class="btn btn-primary btn-sm" style="font-size:13px; padding:6px 12px;"><i class="fa-solid fa-download"></i> İndir</a>
+                    <button onclick="closeModal('pdfModal')" style="background:rgba(0,0,0,0.06); border:none; color:var(--text-primary); width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px;"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div id="pdfViewerContainer" style="width:100%; height:100%; background:#f5f5f7; overflow:hidden;"></div>
+        </div>
+    </div>
+            <iframe id="pdfIframe" style="width:100%; height:100%; border:none; background:#f5f5f7;"></iframe>
+        </div>
+    </div>
+
+    <!-- ZEKA RAPORU MODAL -->
+    <div class="modal-overlay" id="reportModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:999999 !important; pointer-events:auto !important; align-items:center; justify-content:center; padding:1.5rem;">
+        <div class="modal-container" style="background:#fff; width:100%; max-width:850px; max-height:85vh; border-radius:20px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 25px 60px rgba(0,0,0,0.3);">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem; border-bottom:1px solid rgba(0,0,0,0.08); background:linear-gradient(135deg, rgba(0,113,227,0.05), rgba(94,92,230,0.05));">
+                <h3 id="reportProjectTitle" style="margin:0; font-size:18px; font-weight:700; color:var(--text-primary);"><i class="fa-solid fa-brain" style="color:var(--accent);"></i> Nexa AI Zeka Raporu</h3>
+                <button onclick="closeModal('reportModal')" style="background:rgba(0,0,0,0.06); border:none; color:var(--text-primary); width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="reportModalBody" style="padding:2rem; overflow-y:auto; font-size:15px; line-height:1.7; color:var(--text-primary);">
+                <!-- Dynamic Markdown Intelligence Report Content -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>
