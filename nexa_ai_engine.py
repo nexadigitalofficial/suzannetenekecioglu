@@ -250,6 +250,16 @@ def item_price_label(item):
     pd = item.get("price_display")
     return pd if pd else "Fiyat Sorulacak"
 
+def _load_project_summaries():
+    try:
+        p = Path(__file__).parent / "nexa_project_summaries.json"
+        if p.exists():
+            return json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+
 def build_rationale(item, parts):
     """Gerçek verilerden türetilmiş gerekçe."""
     extra = []
@@ -285,6 +295,8 @@ def process_nexa_query(user_query):
 
     scored = []
     for it in items:
+        if it.get("type") == "portfolio":
+            continue
         s, parts = score_item(it, budget, regions, rooms, goals, want_type, named_projects)
         scored.append((s, it, parts))
     scored.sort(key=lambda x: -x[0])
@@ -301,7 +313,6 @@ def process_nexa_query(user_query):
         if name_hits:
             cbs = name_hits
     cb_matches = cbs[:3]
-    pf_matches = [(s, it, p) for s, it, p in scored if it.get("type") == "portfolio" and s >= 55][:3]
 
     # Rapor başlığı
     def fmt_money(v):
@@ -327,7 +338,7 @@ def process_nexa_query(user_query):
     ]
 
     if not cb_matches:
-        lines.append("\n_Ölçütlerinizle eşleşen markalı proje bulunamadı; portföy ilanları değerlendirildi._")
+        lines.append("\n_Ölçütlerinizle eşleşen markalı proje bulunamadı; portföy verileri değerlendirildi._")
 
     # Çekirdek proje kartları
     for s, it, parts in cb_matches:
@@ -335,30 +346,13 @@ def process_nexa_query(user_query):
         label = f"**{it['title']}** — %{s} Uyumlu\n📍 {item_region_label(it)} • 💰 {ip}"
         lines.append(f"\n{label}\n💡 {build_rationale(it, parts)}")
 
-    # Portföy ilanları (gerçek fiyat/oda/alan bilgisiyle)
-    if pf_matches:
-        lines.append("\n---\n**🏷️ Uyumlu Portföy İlanları (Gerçek Veri):**")
-        for s, it, parts in pf_matches:
-            info = []
-            if it.get("price_display"):
-                info.append(f"💰 {it['price_display']}")
-            if it.get("room_info"):
-                info.append(f"🛏️ {it['room_info']}")
-            if it.get("net_gross_area"):
-                info.append(f"📐 {it['net_gross_area']}")
-            if it.get("ada_no"):
-                info.append(f"📍 Ada {it['ada_no']}/{it['parsel_no']}")
-            if it.get("tkgm_verified"):
-                info.append("✅ TKGM Onaylı")
-            if it.get("description"):
-                info.append(f"📄 {it['description'][:110]}...")
-            lines.append(f"\n* **{it['title']}** (İlçe: {item_region_label(it)})\n   " + "\n   ".join(info))
-
     lines.append("\n---\n_Detaylı sunum, güncel fiyat listesi ve parsel raporları için **0535 489 56 56** WhatsApp hattından ulaşabilirsiniz._")
 
     # Kart formatı (site.html uyumlu)
+    summaries = _load_project_summaries()
     project_cards = []
     for s, it, parts in cb_matches:
+        ozet = summaries.get(it["title"], {}).get("summary") or ""
         project_cards.append({
             "id": it["id"],
             "db_id": it.get("db_id"),
@@ -366,7 +360,8 @@ def process_nexa_query(user_query):
             "region": item_region_label(it),
             "price_display": item_price_label(it),
             "match_percent": s,
-            "rationale": build_rationale(it, parts),
+            "rationale": ozet or build_rationale(it, parts),
+            "summary": ozet,
             "media": {
                 "promo_video_url": it.get("tanitim_cloud_url") or it.get("cloud_direct_url") or it.get("cloud_video_url") or f"/stream/video/{it['id']}",
                 "slideshow_video_url": it.get("slideshow_cloud_url") or it.get("cloud_video_url") or f"/stream/video/{it['id']}",

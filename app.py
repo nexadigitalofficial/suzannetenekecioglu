@@ -90,7 +90,10 @@ def api_listings():
         _refresh_cb_listings_bg()
     return jsonify({"success": True, "data": _listings_cache["data"]})
 
-from nexa_ai_engine import process_nexa_query
+from nexa_ai_engine import process_nexa_query, extract_keywords_and_projects
+from nexa_rag import (cognitive_chat, _find_project_by_name, DOCS_DIR as NEXA_DOCS_DIR,
+                      DB_PATH as NEXA_DB_PATH, generate_all_project_summaries,
+                      get_project_summary)
 
 @app.route("/api/projects", methods=["GET"])
 def api_projects():
@@ -106,9 +109,91 @@ def api_nexa_ai_chat():
     message = data.get("message", "")
     if not message:
         return jsonify({"success": False, "response": "Lütfen bir soru yazın."}), 400
-    
+
     result = process_nexa_query(message)
-    return jsonify(result)
+    cards = result.get("projects", [])
+
+    project = None
+    try:
+        named = extract_keywords_and_projects(message)
+        if len(named) == 1:
+            project = _find_project_by_name(named[0])
+    except Exception:
+        project = None
+
+    try:
+        rag_reply = cognitive_chat(message, project=project)
+        if rag_reply:
+            return jsonify({
+                "success": True,
+                "response": rag_reply,
+                "projects": cards,
+                "mode": "cognitive-rag"
+            })
+    except Exception:
+        pass
+
+    return jsonify({
+        "success": True,
+        "response": result.get("response", "Nexa AI Analizi tamamlandı."),
+        "projects": cards,
+        "mode": "heuristic"
+    })
+
+@app.route("/api/nexa-documents", methods=["GET"])
+def api_nexa_documents():
+    project_id = request.args.get("project_id", type=int)
+    folder = request.args.get("folder", type=int)
+    try:
+        import sqlite3
+        conn = sqlite3.connect(f"file:{NEXA_DB_PATH}?mode=ro", uri=True)
+        conn.row_factory = sqlite3.Row
+        if project_id:
+            rows = conn.execute(
+                "SELECT id, project_id, doc_type, title, file_url, category FROM documents WHERE project_id = ? ORDER BY id",
+                (project_id,)).fetchall()
+        elif folder:
+            rows = conn.execute(
+                "SELECT id, project_id, doc_type, title, file_url, category FROM documents WHERE (doc_type='doc' OR doc_type='html') AND file_url LIKE '/static/documents/%' AND category LIKE ? ORDER BY project_id, id",
+                (f"%{folder}%",)).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT id, project_id, doc_type, title, file_url, category FROM documents ORDER BY project_id, id").fetchall()
+        conn.close()
+        out = []
+        for r in rows:
+            d = dict(r)
+            url = d.get("file_url") or "#"
+            if url.startswith("/static/documents/"):
+                url = url.replace("/static/documents/", "/nexa-docs/", 1)
+            d["download_url"] = url
+            out.append(d)
+        return jsonify({"success": True, "count": len(out), "documents": out})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/api/nexa-summaries", methods=["GET"])
+def api_nexa_summaries():
+    try:
+        from nexa_rag import _load_summaries
+        data = _load_summaries()
+        items = [{"project_id": v.get("project_id"), "title": k, "summary": v.get("summary", "")}
+                 for k, v in data.items()]
+        return jsonify({"success": True, "count": len(items), "summaries": items})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/nexa-docs/<path:filename>")
+def nexa_docs_file(filename):
+    base = NEXA_DOCS_DIR.resolve()
+    target = (base / filename).resolve()
+    if base not in target.parents and target != base:
+        return "Erişim engellendi", 403
+    if not target.exists():
+        return "Dosya bulunamadı", 404
+    resp = send_file(str(target))
+    resp.headers["Cache-Control"] = "public, max-age=86400"
+    return resp
 
 @app.route("/site")
 def site():
@@ -422,4 +507,5 @@ def index():
 if __name__ == "__main__":
     print("[START] COLDWELL BANKER VIP - CLOUD STREAM SYSTEM (FOLDER 3)")
     print("[PORT] Sunucu Baslatiliyor: http://localhost:5002")
+    threading.Thread(target=generate_all_project_summaries, daemon=True, name="auto-summaries").start()
     app.run(host="0.0.0.0", port=5002, debug=False, use_reloader=False)

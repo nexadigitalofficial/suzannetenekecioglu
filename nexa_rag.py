@@ -1,0 +1,392 @@
+"""
+NEXA RAG — Bilişsel Gayrimenkul Zekası (NEXA PRIME v2 ENTEPRISE seviyesi)
+- NEXA PRIME veritabanındaki proje metadata + doküman chunk'larına RAG yapar
+- Gemini çoklu-anahtar çoklu-model fallback ile cevap üretir (NEXA PRIME mimarisi)
+- Bulut yoksa yerel Ollama, o da yoksa None döner (çağıran taraf heuristic'e düşer)
+"""
+import os
+import re
+import json
+import time
+import sqlite3
+import logging
+from pathlib import Path
+
+logger = logging.getLogger("nexa.rag")
+
+NEXA_ROOT = Path(r"C:\Users\USER\Desktop\NEXA_PRIME_v2_ENTERPRISE")
+DB_PATH = NEXA_ROOT / "nexa_database.db"
+DOCS_DIR = NEXA_ROOT / "static" / "documents"
+SUMMARIES_FILE = Path(r"C:\Users\USER\Desktop\3\nexa_project_summaries.json")
+
+FALLBACK_MODELS = [
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+]
+
+CONTACT_LINE = "Detaylı sunum, güncel fiyat listesi ve parsel raporları için **0535 489 56 56** WhatsApp hattından ulaşabilirsiniz."
+
+
+def _read_api_keys():
+    keys = []
+    env_keys = os.getenv("GEMINI_API_KEYS", "")
+    if env_keys:
+        keys += [k.strip() for k in env_keys.split(",") if k.strip()]
+    env_file = NEXA_ROOT / ".env"
+    if env_file.exists():
+        for line in env_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = line.strip()
+            if line.startswith("GEMINI_API_KEYS="):
+                keys += [k.strip() for k in line.split("=", 1)[1].split(",") if k.strip()]
+    if not keys:
+        try:
+            from app.core.config import settings
+        except Exception:
+            return []
+        keys = settings.api_keys_list
+    seen, out = set(), []
+    for k in keys:
+        if k and k not in seen and "YENI_API_KEY" not in k and len(k) >= 10:
+            seen.add(k)
+            out.append(k)
+    return out
+
+
+def _merge_summary(name, project_id, summary):
+    data = _load_summaries()
+    data[name] = {"summary": summary, "project_id": project_id, "ts": time.time()}
+    return data
+
+
+def _load_db():
+    return sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+
+
+def build_project_context(db_id):
+    db = _load_db()
+    db.row_factory = sqlite3.Row
+    try:
+        p = dict(db.execute("SELECT * FROM projects WHERE id = ?", (db_id,)).fetchone())
+        ptype = (f"BİREYSEL PORTFÖY İLANI ({p['listing_type'] or 'İlan'})"
+                 if p.get("is_portfolio") else "MARKALI PROJE")
+        meta = "\n".join([
+            "=== PORTFÖY / PROJE METADATA ===",
+            f"[AD]: {p['name']}",
+            f"[EKOSİSTEM]: {ptype}",
+            f"[GAYRİMENKUL TİPİ]: {p.get('property_category') or 'Belirtilmedi'}",
+            f"[FİYAT / BEDEL]: {p.get('price_display') or 'Fiyat Belirtilmedi'}",
+            f"[ODA / YAPI]: {p.get('room_info') or 'Belirtilmedi'}",
+            f"[NET / BRÜT ALAN]: {p.get('net_gross_area') or 'Belirtilmedi'}",
+            f"[LOKASYON]: {p.get('location') or ''} ({p.get('ilce') or ''} / {p.get('il') or ''})",
+            f"[ADA/PARSEL]: {p.get('ada_no') or '-'}/{p.get('parsel_no') or '-'} (TKGM: {'Evet' if p.get('tkgm_verified') else 'Hayır'})",
+            f"[AÇIKLAMA]: {p.get('description') or 'Açıklama girilmedi.'}",
+        ])
+        chunks = []
+        for r in db.execute("""
+            SELECT d.title, d.category, dc.chunk_text
+            FROM document_chunks dc JOIN documents d ON dc.document_id = d.id
+            WHERE d.project_id = ? ORDER BY d.id, dc.id LIMIT 12
+        """, (db_id,)):
+            chunks.append(f"[{r['category'] or 'Belge'} - {r['title']}]: {r['chunk_text'][:400]}")
+        return meta + "\n" + "\n\n".join(chunks)
+    finally:
+        db.close()
+
+
+def build_global_context():
+    db = _load_db()
+    db.row_factory = sqlite3.Row
+    try:
+        projects = db.execute("""
+            SELECT id, name, location, il, ilce, mahalle, description, ada_no, parsel_no,
+                   tkgm_verified, is_portfolio, listing_type, property_category,
+                   price_display, room_info, net_gross_area
+            FROM projects WHERE COALESCE(is_portfolio,0) = 0 ORDER BY id ASC
+        """).fetchall()
+        if not projects:
+            return "Sistemde henüz kayıtlı proje bulunmamaktadır."
+        parts = []
+        for proj in projects:
+            ptype = (f"BİREYSEL PORTFÖY ({proj['listing_type'] or 'İlan'})"
+                     if proj['is_portfolio'] else "MARKALI PROJE")
+            specs = (f"Kategori: {proj['property_category'] or '-'}, "
+                     f"Oda: {proj['room_info'] or '-'}, Alan: {proj['net_gross_area'] or '-'}")
+            loc = proj['location'] or f"{proj['ilce'] or ''} / {proj['il'] or ''}"
+            chunks = []
+            for r in db.execute("""
+                SELECT d.title, d.doc_type, dc.chunk_text
+                FROM document_chunks dc JOIN documents d ON dc.document_id = d.id
+                WHERE d.project_id = ? LIMIT 8
+            """, (proj['id'],)):
+                chunks.append(f"  • [{r['doc_type'].upper()} - {r['title']}]: {r['chunk_text'][:260]}")
+            if not chunks:
+                chunks = ["  • (Henüz taranmış özel belge bulunmuyor)"]
+            parts.append("\n".join([
+                "---",
+                f"İLAN/PROJE ID: {proj['id']} [{ptype}]",
+                f"AD: {proj['name']}",
+                f"FİYAT: {proj['price_display'] or 'Fiyat Belirtilmedi'} | {specs}",
+                f"LOKASYON: {loc} (İl: {proj['il'] or '-'}, İlçe: {proj['ilce'] or '-'}, Mahalle: {proj['mahalle'] or '-'})",
+                f"ADA/PARSEL: {proj['ada_no'] or '-'}/{proj['parsel_no'] or '-'} (TKGM Onay: {'Evet' if proj['tkgm_verified'] else 'Hayır'})",
+                f"AÇIKLAMA: {proj['description'] or 'Açıklama yok.'}",
+                "BELGE/VERİ ÖZETLERİ:",
+                "\n".join(chunks),
+            ]))
+        return "\n\n".join(parts)
+    finally:
+        db.close()
+
+
+def fetch_proximity_geo_intelligence(il, ilce, mahalle, proj_name):
+    loc = f"{mahalle or ''} {ilce or ''} {il or ''}".strip()
+    if not loc:
+        return ""
+    prompt = f"""
+Sen NEXA'nn Bölgesel Konum & Çevre Aksı Araştırma Ajanısın (Geo-Intelligence Agent).
+Şu lokasyon için Türkiye şehir planlama bilgini kullanarak ulaşım, üniversite, hastane,
+metro/tramvay, otoyol ve gelişen aks bilgilerini 3 maddede özetle:
+
+Proje: {proj_name}
+Lokasyon: {loc}
+
+GÖREVİN:
+- En yakın Üniversiteler ve Eğitim Aksı
+- En yakın Hastane ve Sağlık Merkezleri
+- En yakın Tramvay/Metro/Bus ve Otoyol Ulaşım Aksları
+- Bölgenin yatırım ve prim gelişim potansiyeli
+
+Kısa, şık ve maddeler halinde yaz. Dokümanda yer almasa bile gerçek coğrafi lokasyondan hareketle anlat.
+"""
+    try:
+        return _gemini_generate(prompt)
+    except Exception as e:
+        logger.warning("Geo intelligence failed: %s", e)
+        return ""
+
+
+def _gemini_generate(contents):
+    from google import genai
+    keys = _read_api_keys()
+    targets = [m for m in FALLBACK_MODELS]
+    for key in keys:
+        try:
+            client = genai.Client(api_key=key)
+            for model in targets:
+                try:
+                    resp = client.models.generate_content(model=model, contents=contents)
+                    if resp and resp.text:
+                        return resp.text
+                except Exception as e:
+                    logger.warning("Model %s failed (%s)", model, str(e)[:120])
+                    continue
+        except Exception as e:
+            logger.warning("Key failed: %s", str(e)[:120])
+            continue
+    return _ollama_fallback(contents)
+
+
+def _ollama_fallback(prompt):
+    try:
+        import httpx
+        resp = httpx.post("http://localhost:11434/api/generate",
+                          json={"model": "llama3", "prompt": prompt, "stream": False},
+                          timeout=15.0)
+        if resp.status_code == 200:
+            return (resp.json().get("response") or "")[:2000]
+    except Exception:
+        pass
+    return None
+
+
+def _find_project_by_name(name):
+    db = _load_db()
+    db.row_factory = sqlite3.Row
+    try:
+        norm = lambda s: re.sub(r"[^a-z0-9]", "", (s or "").lower())
+        target = norm(name)
+        best, best_score = None, 0
+        for p in db.execute("SELECT * FROM projects WHERE COALESCE(is_portfolio,0) = 0 ORDER BY id ASC"):
+            t = norm(p["name"])
+            if t and (target in t or t in target):
+                score = min(len(target), len(t))
+                if score > best_score:
+                    best_score, best = score, p
+        return dict(best) if best else None
+    finally:
+        db.close()
+
+
+_LOCATION_KEYWORDS = ("ulaşım", "aks", "yakınlık", "nerede", "çevre", "hastane", "okul",
+                      "üniversite", "metro", "tramvay", "otoyol", "havalimanı", "avm",
+                      "konum", "mesafe", "bölge", "site", "çevresinde", "manzara")
+
+
+def _load_summaries():
+    try:
+        if SUMMARIES_FILE.exists():
+            return json.loads(SUMMARIES_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+
+def _save_summaries(data):
+    try:
+        SUMMARIES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=1),
+                                  encoding="utf-8")
+    except Exception as e:
+        logger.warning("Ozet kaydedilemedi: %s", e)
+
+
+def build_project_summary(proj):
+    context = build_project_context(proj["id"])
+    prompt = f"""
+Sen Nexa portföy danışmanısın. Aşağıdaki proje verilerinden kısa, net ve satış odaklı bir PROJE ÖZETİ üret.
+Format (madde madde, en fazla 8 satır, başlık satırı olmadan):
+- Konum ve proje kimliği
+- Proje konsepti, kat/blok ve daire tipleri
+- Fiyat ve ödeme planı özeti (varsa gerçek rakamlar)
+- Teslim süresi (varsa)
+- Tapu/TKGM durumu (ada/parsel)
+
+Uydurma veri ekleme; bilinmeyeni yazma.
+
+PROJE: {proj['name']}
+VERİ:
+{context}
+"""
+    reply = _gemini_generate(prompt)
+    if reply and len(reply.strip()) > 40:
+        return reply.strip()
+    return None
+
+
+def generate_all_project_summaries(force=False):
+    """Drive (markalı) projelerin her biri için özeti otomatik üretir ve önbelleğe alır."""
+    data = {} if force else _load_summaries()
+    db = _load_db()
+    db.row_factory = sqlite3.Row
+    try:
+        projects = db.execute(
+            "SELECT * FROM projects WHERE COALESCE(is_portfolio,0) = 0 ORDER BY id ASC").fetchall()
+    finally:
+        db.close()
+    done = 0
+    for p in projects:
+        name = p["name"]
+        if not force and data.get(name, {}).get("summary"):
+            continue
+        try:
+            s = build_project_summary(dict(p))
+            if s:
+                data[name] = {"summary": s, "project_id": p["id"], "ts": time.time()}
+                done += 1
+                logger.info("Ozet uretildi: %s", name)
+                _save_summaries(data)
+            time.sleep(0.7)
+        except Exception as e:
+            logger.warning("Ozet uretilemedi %s: %s", name, e)
+            continue
+    _save_summaries(data)
+    return done
+
+
+def get_project_summary(name):
+    return _load_summaries().get(name, {}).get("summary") or ""
+
+
+def cognitive_chat(user_message, project=None):
+    """
+    NEXA PRIME seviyesinde bilişsel cevap üretir.
+    project: name ile eşleşen project dict (varsa tekil proje modu).
+    Başarısızlıkta None döner; çağıran heuristic'e düşer.
+    """
+    msg = (user_message or "").strip()
+    is_location_query = any(kw in msg.lower() for kw in _LOCATION_KEYWORDS)
+
+    if project:
+        cached = get_project_summary(project["name"])
+        if cached:
+            return f"**{project['name']} — Proje Özeti**\n\n{cached}\n\n{CONTACT_LINE}"
+        try:
+            s = build_project_summary(project)
+            if s:
+                _save_summaries(_merge_summary(project["name"], project["id"], s))
+                return f"**{project['name']} — Proje Özeti**\n\n{s}\n\n{CONTACT_LINE}"
+        except Exception:
+            pass
+        context = build_project_context(project["id"])
+        geo = ""
+        if is_location_query or not context:
+            geo = fetch_proximity_geo_intelligence(
+                project.get("il") or "", project.get("ilce") or "",
+                project.get("mahalle") or "", project["name"])
+        system = f"""
+Sen Nexa — Bilişkin Gayrimenkul Ekosistemi'nin kıdemli lüks yatırım danışmanısın (NEXA PRIME v2).
+Son derece profesyonel, elit, ikna edici ve karizmatik bir dille yanıt ver.
+
+İncelenen Proje: {project['name']}
+
+RAG BAĞLAMI (metadata + dokümanlar):
+{context if context else 'Bu proje için özel doküman bağlamı yok; genel portföy verisi geçerli.'}
+
+GEO-INTELLIGENCE:
+{geo if geo else '(lokasyon aksı sorgusu bağlamdan yanıtlanacak)'}
+
+Kullanıcı: {msg}
+
+Kurallar:
+1. Fiyat, teslim, metrekare, ödeme planı varsa RAG'daki rakamları birebir ver.
+2. ULAŞIM/ÇEVRE sorularında GEO verisini kullanarak tramvay, hastane, üniversite, otoyol akslarını anlat; 'dokümanda yok' deme.
+3. Uydurma veri ekleme; bilinmeyeni 'danışmanımız netleştirecektir' diyerek kapat.
+4. Madde/liste kullan, markdown. Sonuna şu iletişim satırını ekle: {CONTACT_LINE}
+Cevabı 450 kelimeyi aşmadan Türkçe yaz.
+"""
+    else:
+        context = build_global_context()
+        summaries = _load_summaries()
+        summ_block = "\n".join(
+            f"- {n}: {d.get('summary', '')}" for n, d in summaries.items() if d.get("summary"))
+        prompt_summaries = f"""
+ÖNCEDEN ÜRETİLMİŞ PROJE ÖZETLERİ (bu blok doğrudan kullanılabilir, eksik proje varsa aşağıdaki RAG bağlamından tamamla):
+{summ_block[:6000] if summ_block else '(henüz üretilmemiş — RAG bağlamından yararlan)'}
+"""
+        system = f"""
+Sen Nexa — Bilişkin Gayrimenkul Ekosistemi'nin Baş Portföy & Yatırım Stratejisti AI Danışmanısın (NEXA PRIME v2).
+Tüm portföydeki MARKALI PROJELERİ çapraz analiz eden kıdemli danışmansın.
+
+{prompt_summaries}
+
+TÜM PORTFÖY RAG BAĞLAMI (proje metadata + kayıtlı doküman özetleri/fiyat listeleri):
+{context}
+
+Kullanıcı: {msg}
+
+Kurallar:
+1. Soruyu markalı projelerin verilerine dayanarak cevapla; kişisel portföy ilanları bu sistemde değildir.
+2. Projeleri tanıtırken her proje için KISA PROJE ÖZETİ formatı kullan: adı — lokasyon — konsept/tipler — fiyat/ödeme özeti — teslim (varsa) — TKGM/ada-parsel. En fazla 5-6 satır/proje.
+3. Karşılaştırma sorularında şık bir Markdown tablosu kullan; rakamları yalnızca veriden al, uydurma.
+4. Bilgi bağlamda yoksa "danışmanımız netleştirecektir" de. İlgisiz sorularda kısa ve nazik bilgilendir.
+5. Markdown formatında, madde ve tablo kullan. Cevabı 500 kelimeyi aşmadan Türkçe yaz.
+Sonuna şu iletişim satırını ekle: {CONTACT_LINE}
+"""
+    try:
+        reply = _gemini_generate(system)
+        if reply and len(reply.strip()) > 20:
+            return reply.strip()
+    except Exception as e:
+        logger.error("Cognitive generation failed: %s", e)
+    return None
+
+
+if __name__ == "__main__":
+    import io, sys
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    print("— GLOBAL TEST —")
+    print(cognitive_chat("En uygun fiyatlı 3+1 projeler hangileri? 5 milyon bütçem var."))
+    print()
+    print("— TEKİL PROJE TESTI —")
+    proj = _find_project_by_name("MONZA MOON")
+    print(cognitive_chat("Bu projenin fiyat ve ödeme planını anlatır mısın?", project=proj))
