@@ -74,6 +74,43 @@ def _load_db():
     return sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
 
 
+# ─── BELGE BESLEME KALİTESİ (RAG feed) ───
+# Çözülememiş PDF metni: kontrol karakterleri + Latin-1/IPA/Greek bloğunda 4+ ardışık karakter
+# (glyph'ler: ʤʡʦʬ...; PDF'den gelen \x01\x02\x03 de bölünmezlik için dahil)
+_GARBAGE_RE = re.compile(r"[\u0001-\u0008\u000b\u000c\u000e-\u001f\u007f-\u02ff]{4,}")
+_MIN_PIECE = 12
+
+
+def _glyph_ratio(s):
+    return sum(1 for c in s if "\u0080" <= c <= "\u02ff") / max(len(s), 1)
+
+
+def _clean_chunk(text):
+    """Çöp glyph bloklarını atıp anlamlı parçaları korur; tamamı çöpse None döner."""
+    if not text:
+        return None
+    if not _GARBAGE_RE.search(text):
+        return text
+    pieces = []
+    for p in _GARBAGE_RE.split(text):
+        p = p.strip()
+        if len(p) >= _MIN_PIECE and _glyph_ratio(p) < 0.4:
+            pieces.append(p)
+    return " ".join(pieces) or None
+
+
+# SUNUM/ÖDEME/FİYAT içeren belgeler önce, IBAN/BANKA/SÖZLEŞME/HİSSE en son
+_DOC_PRIORITY_SQL = """
+    CASE
+        WHEN UPPER(d.title) LIKE '%SUNUM%' OR UPPER(d.title) LIKE '%ÖDEME%'
+          OR UPPER(d.title) LIKE '%FIYAT%' OR UPPER(d.title) LIKE '%FİYAT%' THEN 0
+        WHEN UPPER(d.title) LIKE '%IBAN%' OR UPPER(d.title) LIKE '%BANKA%'
+          OR UPPER(d.title) LIKE '%SÖZLEŞME%' OR UPPER(d.title) LIKE '%SOZLESME%'
+          OR UPPER(d.title) LIKE '%HİSSE%' OR UPPER(d.title) LIKE '%HISSE%' THEN 2
+        ELSE 1
+    END"""
+
+
 def build_project_context(db_id):
     db = _load_db()
     db.row_factory = sqlite3.Row
@@ -94,12 +131,21 @@ def build_project_context(db_id):
             f"[AÇIKLAMA]: {p.get('description') or 'Açıklama girilmedi.'}",
         ])
         chunks = []
-        for r in db.execute("""
+        for r in db.execute(f"""
             SELECT d.title, d.category, dc.chunk_text
             FROM document_chunks dc JOIN documents d ON dc.document_id = d.id
-            WHERE d.project_id = ? ORDER BY d.id, dc.id LIMIT 12
+            WHERE d.project_id = ? AND LENGTH(TRIM(dc.chunk_text)) > 0
+            ORDER BY {_DOC_PRIORITY_SQL}, d.id, dc.id
+            LIMIT 24
         """, (db_id,)):
-            chunks.append(f"[{r['category'] or 'Belge'} - {r['title']}]: {r['chunk_text'][:400]}")
+            txt = _clean_chunk(r["chunk_text"])
+            if txt is None:
+                continue
+            chunks.append(f"[{r['category'] or 'Belge'} - {r['title']}]: {txt[:400]}")
+            if len(chunks) >= 12:
+                break
+        if not chunks:
+            chunks.append("[BELGE]: Bu proje için sistemde henüz anlamlı doküman içeriği bulunmuyor (belge yüklenmemiş veya çözümlenememiş olabilir).")
         return meta + "\n" + "\n\n".join(chunks)
     finally:
         db.close()
@@ -125,12 +171,19 @@ def build_global_context():
                      f"Oda: {proj['room_info'] or '-'}, Alan: {proj['net_gross_area'] or '-'}")
             loc = proj['location'] or f"{proj['ilce'] or ''} / {proj['il'] or ''}"
             chunks = []
-            for r in db.execute("""
+            for r in db.execute(f"""
                 SELECT d.title, d.doc_type, dc.chunk_text
                 FROM document_chunks dc JOIN documents d ON dc.document_id = d.id
-                WHERE d.project_id = ? LIMIT 8
+                WHERE d.project_id = ? AND LENGTH(TRIM(dc.chunk_text)) > 0
+                ORDER BY {_DOC_PRIORITY_SQL}, d.id, dc.id
+                LIMIT 16
             """, (proj['id'],)):
-                chunks.append(f"  • [{r['doc_type'].upper()} - {r['title']}]: {r['chunk_text'][:260]}")
+                txt = _clean_chunk(r["chunk_text"])
+                if txt is None:
+                    continue
+                chunks.append(f"  • [{r['doc_type'].upper()} - {r['title']}]: {txt[:260]}")
+                if len(chunks) >= 8:
+                    break
             if not chunks:
                 chunks = ["  • (Henüz taranmış özel belge bulunmuyor)"]
             parts.append("\n".join([
