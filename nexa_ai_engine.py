@@ -59,8 +59,10 @@ def norm_text(t):
     return (t or "").lower().replace("ı", "i").replace("ş", "s").replace("ğ", "g").replace("ü", "u").replace("ö", "o").replace("ç", "c")
 
 def extract_budget(text):
-    """Bütçe: '5 milyon', '3.5m', '60 bin', '5000000', '5.000.000 tl', '₺5M' veya '5-10M' aralığı."""
+    """Bütçe: '5 milyon', '3.5m', '60 bin', '5000000', '5.000.000', '₺5M', '5-10M', '5 buçuk milyon'."""
     t = text.lower().replace("₺", "")
+    if re.search(r'dolar|euro|usd|eur|\$|€', t):
+        return None
     rng = re.search(r'(\d[\d.,]*)\s*[-–]\s*(\d[\d.,]*)\s*(?:milyon|mln|m\b|bin|tl)', t)
     if rng:
         g0 = rng.group(0)
@@ -78,9 +80,16 @@ def extract_budget(text):
         num = float(m.group(1).replace(',', '.'))
         mul = 1_000 if m.group(2) == 'bin' else 1_000_000
         return {"min": int(num * mul), "max": None}
-    m2 = re.search(r'(\d{1,3}(?:\.\d{3})*)+\s*(?:tl|lira)', t)
+    # M4: "5 buçuk milyon" / "5.5 milyon" (buçuk desteği)
+    m3 = re.search(r'(\d+)\s*(?:buçuk|bucuk)\s*(milyon|mln|m\b|bin)', t)
+    if m3:
+        num = float(m3.group(1)) + 0.5
+        mul = 1_000 if m3.group(2) == 'bin' else 1_000_000
+        return {"min": int(num * mul), "max": None}
+    # M4: ham büyük sayı (binlik ayraçlı veya düz): "5.000.000", "5000000" — TL şartı yok
+    m2 = re.search(r'((?:\d{1,3}(?:\.\d{3})+|\d{4,}))\s*(?:tl|lira)?', t)
     if m2:
-        raw = re.sub(r'\D', '', m2.group(0))
+        raw = re.sub(r'\D', '', m2.group(1))
         if len(raw) >= 6:
             return {"min": int(raw), "max": None}
     return None
@@ -109,10 +118,13 @@ def extract_region(text):
     return found
 
 def extract_rooms(text):
-    """Oda tipi: '3+1', '4+1', '2 1' vb."""
+    """Oda tipi: '3+1', '4+1', '2 1' (M3: boşluklu yazım desteği)."""
     m = re.search(r'(\d)\s*\+\s*(\d)', text)
     if m:
         return f"{m.group(1)}+{m.group(2)}"
+    m2 = re.search(r'(?<![\d.])([1-9])\s+([1-4])(?![\d])', text)
+    if m2:
+        return f"{m2.group(1)}+{m2.group(2)}"
     return None
 
 def extract_goals(text):
@@ -133,10 +145,23 @@ def extract_goals(text):
     return goals, want_type
 
 def extract_keywords_and_projects(text):
-    """Kullanıcının sorgusunda adı geçen projeler."""
+    """Kullanıcının sorgusunda adı geçen projeler (M7: kısa sinonim, uzun eşleşmenin parçasıysa elenir)."""
     t = norm_text(text)
-    hits = [title for key, title in PROJE_SINONIMLERI.items() if key in t]
-    return list(dict.fromkeys(hits))
+    keys = sorted((k for k in PROJE_SINONIMLERI if k in t), key=len, reverse=True)
+    out = []
+    for k in keys:
+        if any(k in k2 and k != k2 for k2 in keys):
+            continue
+        out.append(PROJE_SINONIMLERI[k])
+    # "START BRAVO" gibi ortak bölüm adı: aynı bölgedeki tüm projeleri de getir
+    for name in list(out):
+        if " - " in name:
+            suffix = name.split(" - ", 1)[-1]
+            if suffix and norm_text(suffix) in t:
+                for other in PROJE_SINONIMLERI.values():
+                    if other != name and other not in out and suffix in other:
+                        out.append(other)
+    return list(dict.fromkeys(out))
 
 # ─── PUANLAMA ───
 def _norm_price_num(raw):

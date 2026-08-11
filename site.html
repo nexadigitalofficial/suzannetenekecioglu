@@ -1308,6 +1308,52 @@
             background: var(--accent-hover);
         }
 
+        /* E4: Lead mini formu */
+        .chat-lead-row {
+            display: flex;
+            gap: 0.4rem;
+            padding: 0.6rem 1rem 0;
+            background: var(--white);
+        }
+        .chat-lead-input {
+            flex: 1;
+            min-width: 0;
+            padding: 0.55rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 980px;
+            font-family: var(--font-primary);
+            font-size: 13px;
+            outline: none;
+            background: var(--bg);
+            transition: var(--transition);
+        }
+        .chat-lead-input:focus {
+            border-color: var(--accent);
+            background: var(--white);
+        }
+        .chat-lead-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #25D366;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+        .chat-lead-btn:hover {
+            transform: scale(1.05);
+            background: #1fb857;
+        }
+        .chat-lead-row.saved {
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
         /* Modals */
         .modal-overlay {
             position: fixed;
@@ -1475,6 +1521,12 @@
                 width: calc(100vw - 32px);
                 right: -8px;
                 bottom: 70px;
+            }
+
+            /* E8: mobilde chat tam ekran deneyimi */
+            .chat-window.open {
+                height: calc(100dvh - 80px);
+                max-height: none;
             }
         }
     
@@ -1893,6 +1945,12 @@
                 <div class="message bot">
                     Merhaba! 👋 Suzanne Tenekecioğlu'nun dijital asistanıyım. Size en uygun seçkin projeyi veya portföy ilanını bulmam için bütçenizi, oda sayısını veya bölge tercihinizi belirtebilirsiniz.
                 </div>
+            </div>
+            <!-- E4: Lead mini formu — ad + telefon (WhatsApp'a özel mesaj) -->
+            <div class="chat-lead-row" id="chatLeadRow">
+                <input type="text" class="chat-lead-input" id="chatLeadName" placeholder="Adınız" maxlength="60" autocomplete="name">
+                <input type="tel" class="chat-lead-input" id="chatLeadPhone" placeholder="Telefon" maxlength="20" autocomplete="tel">
+                <button class="chat-lead-btn" onclick="saveLeadFromInputs()" title="Bilgi + WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
             </div>
             <div class="chat-input-area">
                 <input type="text" class="chat-input" id="chatInput" placeholder="Mesajınızı yazın..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
@@ -2968,29 +3026,103 @@
             }
         }
 
+        // ─── SOFRAN: OTURUM HAFIZASI (E3) + TELEMETRİ (E6) ───
+        function getChatHistory() {
+            try {
+                const h = JSON.parse(sessionStorage.getItem('nexa_chat_history') || '[]');
+                return Array.isArray(h) ? h.slice(-8) : [];
+            } catch(e) { return []; }
+        }
+        function pushChatHistory(role, text) {
+            try {
+                const h = getChatHistory();
+                h.push({role, text: String(text).slice(0, 600)});
+                sessionStorage.setItem('nexa_chat_history', JSON.stringify(h.slice(-8)));
+            } catch(e) {}
+        }
+        function getLead() {
+            try { return JSON.parse(localStorage.getItem('nexa_lead') || 'null'); } catch(e) { return null; }
+        }
+        function saveLead(name, phone) {
+            const lead = {name: name.trim(), phone: phone.trim(), ts: Date.now()};
+            try { localStorage.setItem('nexa_lead', JSON.stringify(lead)); } catch(e) {}
+            return lead;
+        }
+        function track(event, extra) {
+            try {
+                fetch('/api/track', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(Object.assign({event}, extra || {}))}).catch(() => {});
+            } catch(e) {}
+        }
+        function leadWaSuffix() {
+            const lead = getLead();
+            if (lead && lead.name) return ` (${lead.name}${lead.phone ? ' / ' + lead.phone : ''})`;
+            return '';
+        }
+        function saveLeadFromInputs() {
+            const n = document.getElementById('chatLeadName');
+            const p = document.getElementById('chatLeadPhone');
+            if (!n) return;
+            if (!n.value.trim()) { n.focus(); n.style.borderColor = '#E5484D'; return false; }
+            const lead = saveLead(n.value, p ? p.value : '');
+            if (n.parentElement) n.parentElement.classList.add('saved');
+            track('lead_saved', {target: 'chat', extra: {name: lead.name, has_phone: !!lead.phone}});
+            const waMsg = encodeURIComponent(`Merhaba Suzanne Hanım, ${lead.name} adına ${lead.phone ? lead.phone + ' numarasından ' : ''}bilgi almak istiyorum.${leadWaSuffix()}`);
+            window.open(`https://wa.me/905354895656?text=${waMsg}`, '_blank');
+            return true;
+        }
+
         async function sendChatMessage() {
             const input = document.getElementById('chatInput');
             const message = input.value.trim();
             if (!message) return;
-            
+
             addChatMessage(escapeHtml(message), 'user');
+            pushChatHistory('user', message);
             input.value = '';
 
             const loadingId = 'chat-load-' + Date.now();
             addChatMessage(`<i class="fa-solid fa-brain fa-spin" style="color:var(--accent); margin-right:6px;"></i> Nexa AI Zeka Motoru Analiz Ediyor...`, 'bot', loadingId);
+            const removeLoading = () => { const el = document.getElementById(loadingId); if (el) el.remove(); };
 
+            // E3: son mesajları sunucuya bağlam olarak gönder; 90 sn timeout (E5)
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 90000);
+            let data = null, status = 0;
             try {
                 const res = await fetch('/api/nexa-ai-chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message})
+                    body: JSON.stringify({message, history: getChatHistory()}),
+                    signal: controller.signal
                 });
-                const data = await res.json();
-                
-                const loadEl = document.getElementById(loadingId);
-                if (loadEl) loadEl.remove();
+                status = res.status;
+                data = await res.json().catch(() => null);
+            } catch(e) {
+                removeLoading();
+                const msg = (e && e.name === 'AbortError')
+                    ? 'Yanıt beklerken süre doldu. Lütfen tekrar deneyin veya Suzanne Hanım\'a doğrudan ulaşın.'
+                    : 'Bağlantı sorunu oluştu. Lütfen internetinizi kontrol edip tekrar deneyin.';
+                addChatMessage(msg, 'bot');
+                track('chat_error', {target: 'network', extra: {status}});
+                return;
+            } finally {
+                clearTimeout(timer);
+            }
 
-                let botHtml = formatMarkdownReport(data.response || 'Nexa AI Analizi Tamamlandı.');
+            removeLoading();
+
+            if (!data || data.success === false) {
+                const fallback = (status === 429)
+                    ? 'Çok hızlı soru gönderiyorsunuz. Birkaç saniye sonra tekrar deneyin.'
+                    : 'Sistem kısa süreliğine meşgul. Bir dakika sonra tekrar deneyin veya Suzanne Hanım\'a doğrudan ulaşın.';
+                addChatMessage(fallback, 'bot');
+                track('chat_error', {target: 'api', extra: {status}});
+                return;
+            }
+
+            pushChatHistory('assistant', data.response || '');
+            let botHtml = formatMarkdownReport(data.response || 'Nexa AI Analizi Tamamlandı.');
 
                 if (data.projects && data.projects.length > 0) {
                     botHtml += `<div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">`;
@@ -3016,12 +3148,22 @@
                 }
 
                 addChatMessage(botHtml, 'bot');
-            } catch(e) {
-                    addChatMessage('Mesajınız alındı. Suzanne Tenekecioğlu sizinle en kısa sürede iletişime geçecektir.', 'bot');
-                }
+                track('chat_reply', {target: 'bot', extra: {mode: data.mode || '', count: (data.projects || []).length}});
         }
 
         // Animations & Initialization
+        function initLeadRow() {
+            const lead = getLead();
+            const nameInput = document.getElementById('chatLeadName');
+            const phoneInput = document.getElementById('chatLeadPhone');
+            const row = document.getElementById('chatLeadRow');
+            if (lead) {
+                if (nameInput) nameInput.value = lead.name || '';
+                if (phoneInput) phoneInput.value = lead.phone || '';
+                if (row) row.classList.add('saved');
+            }
+        }
+
         function initAnimations() {
             window.addEventListener('scroll', () => {
                 const nav = document.getElementById('navbar');
@@ -3094,6 +3236,7 @@
         }
 
         function embedSlideshowOnSiteCard(id) {
+            track('click', {project: String(id), target: 'slideshow'});
             const project = projectsData.find(p => String(p.id) === String(id) || String(p.db_id) === String(id));
             if (!project) return;
             const slideshowUrl = project.slideshow_cloud_url || `/stream/video/${id}`;
@@ -3125,6 +3268,7 @@
         }
 
         function openVideoModal(projectId) {
+            track('click', {project: String(projectId), target: 'video'});
             const project = projectsData.find(p => String(p.id) === String(projectId) || String(p.db_id) === String(projectId));
             const cloudUrl = project ? (project.tanitim_cloud_url || project.cloud_direct_url || project.cloud_video_url || `/stream/video/${projectId}`) : `/stream/video/${projectId}`;
 
@@ -3156,6 +3300,7 @@
         }
 
         function openPdfPreview(projectId) {
+            track('click', {project: String(projectId), target: 'pdf'});
             const project = projectsData.find(p => String(p.id) === String(projectId) || String(p.db_id) === String(projectId));
             if(!project) {
                 alert('Proje detayları yüklenemedi.');
@@ -3199,6 +3344,7 @@
         }
 
         async function openProjectReport(projectId) {
+            track('click', {project: String(projectId), target: 'report'});
             const project = projectsData.find(p => String(p.id) === String(projectId) || String(p.db_id) === String(projectId));
             const titleEl = document.getElementById('reportProjectTitle');
             const bodyEl = document.getElementById('reportModalBody');
@@ -3381,6 +3527,7 @@
             initTouchSwipe('projects-carousel');
             initTouchSwipe('portfolio-carousel');
             initAnimations();
+            initLeadRow();
 
             // Additional safety render after 300ms
             setTimeout(() => {

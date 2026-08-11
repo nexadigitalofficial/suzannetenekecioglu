@@ -11,7 +11,10 @@ import os
 import re
 import threading
 import time
+import logging
+from datetime import datetime
 from pathlib import Path
+from logging.handlers import RotatingFileHandler
 from flask import Flask, render_template_string, send_file, send_from_directory, request, jsonify, Response, redirect
 
 try:
@@ -24,17 +27,95 @@ try:
 except ImportError:
     BeautifulSoup = None
 
+# ─── CONFIG (P15: config.json ile taşınabilirlik, ENV override) ───
+BASE_DIR = Path(__file__).parent
+
+_CONFIG_DEFAULTS = {
+    "host": "0.0.0.0",
+    "port": 5002,
+    "projeler_dir": "c:/Users/USER/Desktop/1/projeler",
+    "cb_listings_url": "https://www.cb.com.tr/ilanlar?officeid=470&officeuserid=17983",
+    "log_dir": "logs",
+    "telemetry_file": "logs/telemetry.jsonl",
+    "chat_rate_limit_per_min": 12,
+}
+CONFIG_FILE = BASE_DIR / "config.json"
+
+
+def _load_config():
+    cfg = dict(_CONFIG_DEFAULTS)
+    if CONFIG_FILE.exists():
+        try:
+            cfg.update(json.loads(CONFIG_FILE.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    for env_key, cfg_key in (("NEXA_PORT", "port"), ("NEXA_PROJELER_DIR", "projeler_dir"),
+                             ("NEXA_HOST", "host"), ("NEXA_CB_URL", "cb_listings_url")):
+        val = os.getenv(env_key)
+        if val:
+            if cfg_key == "port":
+                val = int(val)
+            cfg[cfg_key] = val
+    if not CONFIG_FILE.exists():
+        try:
+            CONFIG_FILE.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+    return cfg
+
+
+CFG = _load_config()
+
+# ─── LOGGING (P16: döngüsel dosya logu) ───
+LOG_DIR = BASE_DIR / CFG["log_dir"]
+LOG_DIR.mkdir(exist_ok=True)
+_log_handler = RotatingFileHandler(LOG_DIR / "app.log", maxBytes=5 * 1024 * 1024,
+                                   backupCount=3, encoding="utf-8")
+_log_handler.setFormatter(logging.Formatter(
+    "%(asctime)s %(levelname)s [%(name)s] %(message)s"))
+logging.basicConfig(level=logging.INFO,
+                    handlers=[_log_handler, logging.StreamHandler()])
+logger = logging.getLogger("nexa.app")
+
+# ─── TELEMETRİ (E6: JSONL kaydı) ───
+_telemetry_lock = threading.Lock()
+
+
+def telemetry(event: dict):
+    try:
+        line = json.dumps({"ts": datetime.now().isoformat(), **event}, ensure_ascii=False)
+        with _telemetry_lock:
+            with open(BASE_DIR / CFG["telemetry_file"], "a", encoding="utf-8") as f:
+                f.write(line + "\n")
+    except Exception:
+        pass
+
 # ─── SETUP ───
 app = Flask(__name__)
-BASE_DIR = Path(__file__).parent
-PROJELER_DIR = Path("c:/Users/USER/Desktop/1/projeler")
+PROJELER_DIR = Path(CFG["projeler_dir"])
 STATIC_DIR = BASE_DIR / "static"
 JSON_FILE = BASE_DIR / "projects_map.json"
 
 STATIC_DIR.mkdir(exist_ok=True)
 
+# ─── CHAT RATE LIMIT (production koruması) ───
+_rate_lock = threading.Lock()
+_rate_hits = {}
+
+
+def _check_rate_limit(ip):
+    now = time.time()
+    with _rate_lock:
+        hits = [t for t in _rate_hits.get(ip, []) if now - t < 60]
+        if len(hits) >= int(CFG.get("chat_rate_limit_per_min", 12)):
+            return False
+        hits.append(now)
+        _rate_hits[ip] = hits
+    return True
+
+
 # ─── CB LISTINGS SCRAPER ───
-CB_LISTINGS_URL = "https://www.cb.com.tr/ilanlar?officeid=470&officeuserid=17983"
+CB_LISTINGS_URL = CFG["cb_listings_url"]
 CB_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -105,13 +186,32 @@ def api_projects():
 
 @app.route("/api/nexa-ai-chat", methods=["POST"])
 def api_nexa_ai_chat():
+    client_ip = request.remote_addr or "?"
+    if not _check_rate_limit(client_ip):
+        telemetry({"event": "rate_limited", "ip": client_ip})
+        return jsonify({"success": False,
+                        "response": "Çok hızlı soru gönderiyorsunuz. Lütfen birkaç saniye bekleyip tekrar deneyin."}), 429
+
     data = request.get_json(silent=True) or {}
-    message = data.get("message", "")
+    message = (data.get("message") or "").strip()
     if not message:
         return jsonify({"success": False, "response": "Lütfen bir soru yazın."}), 400
+    if len(message) > 2000:
+        return jsonify({"success": False, "response": "Soru çok uzun (en fazla 2000 karakter)."}), 400
+    history = data.get("history") or []
+    if not isinstance(history, list) or len(history) > 20:
+        history = []
 
-    result = process_nexa_query(message)
+    t0 = time.time()
+    try:
+        result = process_nexa_query(message)
+    except Exception as e:
+        logger.exception("process_nexa_query hatasi")
+        telemetry({"event": "engine_error", "ip": client_ip, "err": str(e)[:200]})
+        return jsonify({"success": False,
+                        "response": "Sistem kısa süreliğine meşgul. Lütfen bir dakika sonra tekrar deneyin."}), 500
     cards = result.get("projects", [])
+    mode = "heuristic"
 
     project = None
     try:
@@ -122,28 +222,58 @@ def api_nexa_ai_chat():
         project = None
 
     try:
-        rag_reply = cognitive_chat(message, project=project)
+        rag_reply = cognitive_chat(message, project=project, history=history)
         if rag_reply:
-            return jsonify({
+            mode = "cognitive-rag"
+            payload = {
                 "success": True,
                 "response": rag_reply,
                 "projects": cards,
-                "mode": "cognitive-rag"
-            })
-    except Exception:
-        pass
+                "mode": mode,
+                "elapsed_ms": int((time.time() - t0) * 1000),
+            }
+            telemetry({"event": "chat", "ip": client_ip, "mode": mode,
+                       "msg": message[:120], "projects": [c.get("title") for c in cards],
+                       "elapsed_ms": payload["elapsed_ms"]})
+            return jsonify(payload)
+    except Exception as e:
+        logger.exception("cognitive_chat hatasi — heuristic'e dusuluyor")
 
-    return jsonify({
+    payload = {
         "success": True,
         "response": result.get("response", "Nexa AI Analizi tamamlandı."),
         "projects": cards,
-        "mode": "heuristic"
-    })
+        "mode": mode,
+        "elapsed_ms": int((time.time() - t0) * 1000),
+    }
+    telemetry({"event": "chat", "ip": client_ip, "mode": mode,
+               "msg": message[:120], "projects": [c.get("title") for c in cards],
+               "elapsed_ms": payload["elapsed_ms"]})
+    return jsonify(payload)
+
+
+@app.route("/api/track", methods=["POST"])
+def api_track():
+    """Frontend olay telemetrisi: proje kartı tıklama, WhatsApp tıklama, lead formu."""
+    data = request.get_json(silent=True) or {}
+    ev = data.get("event") or "click"
+    telemetry({"event": f"ui_{ev}", "ip": request.remote_addr or "?",
+               "project": data.get("project") or "",
+               "target": data.get("target") or "",
+               "extra": (data.get("extra") or {}) if isinstance(data.get("extra"), dict) else {}})
+    return jsonify({"success": True})
+
+
+@app.route("/healthz")
+def healthz():
+    return jsonify({"status": "ok", "service": "nexa-cb-vip",
+                    "time": datetime.now().isoformat(),
+                    "port": CFG["port"]})
 
 @app.route("/api/nexa-documents", methods=["GET"])
 def api_nexa_documents():
     project_id = request.args.get("project_id", type=int)
-    folder = request.args.get("folder", type=int)
+    folder = request.args.get("folder", type=str)  # D1: kategori adı (string)
     try:
         import sqlite3
         conn = sqlite3.connect(f"file:{NEXA_DB_PATH}?mode=ro", uri=True)
@@ -260,8 +390,11 @@ def file_serve():
         rel = os.path.normpath(path_arg).lstrip("/\\")
         if rel.lower().startswith("projeler" + os.sep) or rel.lower().startswith("projeler/"):
             rel = rel[len("projeler"):].lstrip("/\\")
-        target = (PROJELER_DIR / rel).resolve()
-        if not str(target).startswith(str(PROJELER_DIR.resolve())):
+        base = PROJELER_DIR.resolve()
+        target = (base / rel).resolve()
+        # O2: prefix yerine gerçek ebeveyn kontrolü (resolve() symlink'leri de çözer)
+        if target != base and base not in target.parents:
+            logger.warning("Yol disari cikma denemesi: %s", path_arg)
             return "Geçersiz yol", 400
         if not target.exists() or not target.is_file():
             return "Dosya bulunamadı", 404
@@ -318,21 +451,49 @@ def api_project_report(project_id):
         return jsonify({"success": False, "message": "Proje bulunamadı"}), 404
 
     title = project.get("title", "Prestij Projesi")
+
+    # O4/B8: gerçek özet + fiyat/oda verisiyle zengin danışman notu
+    summary = ""
+    try:
+        summary = get_project_summary(title)
+    except Exception:
+        summary = ""
+    pricing = {}
+    try:
+        pf = BASE_DIR / "nexa_portfolio_data.json"
+        if pf.exists():
+            pdata = json.loads(pf.read_text(encoding="utf-8"))
+            pool = pdata if isinstance(pdata, list) else pdata.get("projects", [])
+            for item in pool:
+                if str(item.get("title")) == str(title) or str(item.get("name")) == str(title):
+                    pricing = item
+                    break
+    except Exception:
+        pricing = {}
+
+    price_display = pricing.get("price_display") or "Fiyat için danışmanımızdan bilgi alınız"
+    room_info = pricing.get("room_info") or "Daire tipleri için danışmanımızdan bilgi alınız"
+    loc = pricing.get("location") or project.get("location") or "Prestij Lokasyonu"
+
     report = (
         f"DANISMAN NOTU — {title}\n"
         "===============================================\n\n"
         "📌 PROJE ÖZETİ\n"
         f"• Proje: {title}\n"
-        f"• Bölge: Ankara / Prestij Lokasyonu\n"
-        f"• Geliştirici: Coldwell Banker VIP\n"
-        f"• Durum: Öne Çıkan Seçkin Proje\n\n"
-        "💡 NEXA AI DEĞERLENDİRMESİ\n"
-        "Lokasyon, yapı kalitesi ve bölge değer artış potansiyeli açısından "
-        "yüksek yatırım değeri taşıyan bir projedir. Detaylı fiyat, daire tipi "
-        "ve ödeme planı bilgisi için Suzanne Hanım ile iletişime geçiniz.\n\n"
-        "📞 0535 489 56 56\n"
-        "WhatsApp üzerinden anlık bilgi alabilirsiniz."
+        f"• Bölge: {loc}\n"
+        f"• Fiyat: {price_display}\n"
+        f"• Daire Tipleri: {room_info}\n"
+        f"• Geliştirici: Coldwell Banker VIP\n\n"
     )
+    if summary:
+        report += f"💡 NEXA AI PROJE ÖZETİ\n{summary}\n\n"
+    else:
+        report += (
+            "💡 NEXA AI DEĞERLENDİRMESİ\n"
+            "Proje için henüz otomatik özet üretilmedi; ayrıntılı bilgi için "
+            "Suzanne Hanım ile iletişime geçiniz.\n\n"
+        )
+    report += "📞 0535 489 56 56\nWhatsApp üzerinden anlık bilgi alabilirsiniz."
     return jsonify({"success": True, "report": report})
 
 # ─── FRONTEND TEMPLATE ───
@@ -502,7 +663,6 @@ def index():
     return redirect("/site", code=302)
 
 if __name__ == "__main__":
-    print("[START] COLDWELL BANKER VIP - CLOUD STREAM SYSTEM (FOLDER 3)")
-    print("[PORT] Sunucu Baslatiliyor: http://localhost:5002")
+    logger.info("[START] NEXA CB VIP — http://localhost:%s", CFG["port"])
     threading.Thread(target=generate_all_project_summaries, daemon=True, name="auto-summaries").start()
-    app.run(host="0.0.0.0", port=5002, debug=False, use_reloader=False)
+    app.run(host=CFG["host"], port=int(CFG["port"]), debug=False, use_reloader=False)

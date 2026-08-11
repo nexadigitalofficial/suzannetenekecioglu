@@ -26,8 +26,10 @@ _last_good_model = {}        # key -> son başarılı model (öncelikle dene)
 _reply_cache = {}            # normalize sorgu -> (yanıt, zaman)
 _cache_lock = threading.Lock()
 _save_lock = threading.Lock()
+_global_ctx_cache = {}       # E9: global context (60 sn TTL)
 REPLY_TTL = 300              # 5 dk
 KEY_COOLDOWN = 60
+GLOBAL_CTX_TTL = 60          # saniye
 
 FALLBACK_MODELS = [
     "gemini-2.5-pro",
@@ -35,6 +37,8 @@ FALLBACK_MODELS = [
     "gemini-2.0-flash-lite",
     "gemini-1.5-flash",
 ]
+
+_dead_models = set()  # 404 veren (artık erişilemeyen) modeller
 
 CONTACT_LINE = "Detaylı sunum, güncel fiyat listesi ve parsel raporları için **0535 489 56 56** WhatsApp hattından ulaşabilirsiniz."
 
@@ -111,7 +115,7 @@ _DOC_PRIORITY_SQL = """
     END"""
 
 
-def build_project_context(db_id):
+def build_project_context(db_id, query=None):
     db = _load_db()
     db.row_factory = sqlite3.Row
     try:
@@ -131,6 +135,7 @@ def build_project_context(db_id):
             f"[AÇIKLAMA]: {p.get('description') or 'Açıklama girilmedi.'}",
         ])
         chunks = []
+        raw_chunks = []
         for r in db.execute(f"""
             SELECT d.title, d.category, dc.chunk_text
             FROM document_chunks dc JOIN documents d ON dc.document_id = d.id
@@ -141,9 +146,11 @@ def build_project_context(db_id):
             txt = _clean_chunk(r["chunk_text"])
             if txt is None:
                 continue
-            chunks.append(f"[{r['category'] or 'Belge'} - {r['title']}]: {txt[:400]}")
-            if len(chunks) >= 12:
-                break
+            raw_chunks.append((f"[{r['category'] or 'Belge'} - {r['title']}]: {txt[:400]}", txt))
+        chosen = _rank_chunks(query, raw_chunks) if query else raw_chunks
+        chunks = []
+        for line, _txt in chosen[:12]:
+            chunks.append(line)
         if not chunks:
             chunks.append("[BELGE]: Bu proje için sistemde henüz anlamlı doküman içeriği bulunmuyor (belge yüklenmemiş veya çözümlenememiş olabilir).")
         return meta + "\n" + "\n\n".join(chunks)
@@ -152,6 +159,11 @@ def build_project_context(db_id):
 
 
 def build_global_context():
+    now = time.time()
+    with _cache_lock:
+        cached = _global_ctx_cache.get("ctx")
+        if cached and now - cached[1] < GLOBAL_CTX_TTL:
+            return cached[0]
     db = _load_db()
     db.row_factory = sqlite3.Row
     try:
@@ -197,9 +209,45 @@ def build_global_context():
                 "BELGE/VERİ ÖZETLERİ:",
                 "\n".join(chunks),
             ]))
-        return "\n\n".join(parts)
+        result = "\n\n".join(parts)
+        with _cache_lock:
+            _global_ctx_cache["ctx"] = (result, now)
+        return result
     finally:
         db.close()
+
+
+# ─── SORGU ODAKLI CHUNK SEÇİMİ (Y4 pragmatik iyileştirme) ───
+def _query_tokens(query):
+    """Sorgudan anlamlı Türkçe kelimeleri çıkarır (stopword'süz, sayısal filtreli)."""
+    if not query:
+        return []
+    stop = {"bir", "bana", "bize", "en", "iyi", "uygun", "var", "mı", "mu", "mi",
+            "olan", "olanlar", "proje", "projeler", "projesini", "anlat", "söyle",
+            "hangi", "hangi", "istiyorum", "istiyoruz", "arayıorum", "arıyorum",
+            "lütfen", "acaba", "ile", "ve", "veya", "ne", "nasıl", "nerede",
+            "lazım", "gerek", "bütçe", "bütçem", "bütçemiz"}
+    tokens = re.findall(r"[a-zçğıöşü]{3,}", (query or "").lower())
+    return [t for t in tokens if t not in stop]
+
+
+def _rank_chunks(query, candidates):
+    """Chunk'ları sorgu token'larının geçiş sıklığına göre sıralar (üst 12 seçilir)."""
+    tokens = _query_tokens(query)
+    if not tokens or len(candidates) <= 12:
+        return candidates
+    scored = []
+    for pair in candidates:
+        if isinstance(pair, tuple):
+            text = pair[1]
+        else:
+            text = pair
+        tl = (text or "").lower()
+        score = sum(tl.count(t) for t in tokens)
+        scored.append((score, pair))
+    scored.sort(key=lambda x: -x[0])
+    out = [pair for s, pair in scored if s > 0]
+    return (out or candidates)[:12]
 
 
 def fetch_proximity_geo_intelligence(il, ilce, mahalle, proj_name):
@@ -233,7 +281,9 @@ def _gemini_generate(contents):
     from google import genai
     keys = _read_api_keys()
     now = time.time()
-    targets = [m for m in FALLBACK_MODELS]
+    with _cache_lock:
+        dead = set(_dead_models)
+    targets = [m for m in FALLBACK_MODELS if m not in dead]
     for key in keys:
         with _cache_lock:
             cd = _key_cooldowns.get(key, 0)
@@ -258,6 +308,9 @@ def _gemini_generate(contents):
                             _key_cooldowns[key] = time.time() + KEY_COOLDOWN
                         logger.warning("Anahtar %s kota yok (60sn yasak): %s", key[-6:], msg[:100])
                         break
+                    if "404" in msg or "no longer available" in msg:
+                        with _cache_lock:
+                            _dead_models.add(model)
                     logger.warning("Model %s failed (%s)", model, msg[:120])
                     continue
         except Exception as e:
@@ -279,15 +332,23 @@ def _is_quota_error(msg):
 def _ollama_fallback(prompt):
     try:
         import httpx
-        # Ping: Ollama kapalıysa 15 sn yerine 2 sn içinde vazgeç (P9)
+        # P9: Ping — Ollama kapalıysa 2 sn içinde vazgeç
         try:
             ping = httpx.get("http://localhost:11434/api/tags", timeout=2.0)
             if ping.status_code != 200:
                 return None
         except Exception:
             return None
+        # D8: kurulu modellerden birini seç (llama3 yoksa varsayılan yanlış 15 sn bekleme)
+        model = "llama3"
+        try:
+            tags = ping.json().get("models") or []
+            if tags:
+                model = tags[0].get("name") or model
+        except Exception:
+            pass
         resp = httpx.post("http://localhost:11434/api/generate",
-                          json={"model": "llama3", "prompt": prompt, "stream": False},
+                          json={"model": model, "prompt": prompt, "stream": False},
                           timeout=15.0)
         if resp.status_code == 200:
             return (resp.json().get("response") or "")[:2000]
@@ -394,10 +455,11 @@ def get_project_summary(name):
     return _load_summaries().get(name, {}).get("summary") or ""
 
 
-def cognitive_chat(user_message, project=None):
+def cognitive_chat(user_message, project=None, history=None):
     """
     NEXA PRIME seviyesinde bilişsel cevap üretir.
     project: name ile eşleşen project dict (varsa tekil proje modu).
+    history: son 6-8 mesajdan oluşan [{"role": "user"/"assistant", "text": ...}] listesi (E3).
     Başarısızlıkta None döner; çağıran heuristic'e düşer.
     """
     msg = (user_message or "").strip()
@@ -422,6 +484,17 @@ def cognitive_chat(user_message, project=None):
                         _reply_cache.pop(k, None)
         return reply
 
+    history_block = ""
+    if history:
+        turns = []
+        for h in history[-8:]:
+            role = h.get("role") if isinstance(h, dict) else "user"
+            text = (h.get("content") or h.get("text") if isinstance(h, dict) else str(h) or "").strip()
+            if text:
+                turns.append(f"{'Müşteri' if role == 'user' else 'Nexa'}: {text[:400]}")
+        if turns:
+            history_block = "ÖNCEKİ SOHBET (aynı ziyaretçi, bağlam için kullan; çelişiyorsa son mesaja uy):\n" + "\n".join(turns) + "\n\n"
+
     if project:
         cached = get_project_summary(project["name"])
         if cached:
@@ -433,7 +506,7 @@ def cognitive_chat(user_message, project=None):
                 return _cached(f"**{project['name']} — Proje Özeti**\n\n{s}\n\n{CONTACT_LINE}")
         except Exception:
             pass
-        context = build_project_context(project["id"])
+        context = build_project_context(project["id"], query=msg)
         geo = ""
         if is_location_query or not context:
             geo = fetch_proximity_geo_intelligence(
@@ -445,6 +518,7 @@ Son derece profesyonel, elit, ikna edici ve karizmatik bir dille yanıt ver.
 
 İncelenen Proje: {project['name']}
 
+{history_block}
 RAG BAĞLAMI (metadata + dokümanlar):
 {context if context else 'Bu proje için özel doküman bağlamı yok; genel portföy verisi geçerli.'}
 
@@ -473,6 +547,7 @@ Cevabı 450 kelimeyi aşmadan Türkçe yaz.
 Sen Nexa — Bilişkin Gayrimenkul Ekosistemi'nin Baş Portföy & Yatırım Stratejisti AI Danışmanısın (NEXA PRIME v2).
 Tüm portföydeki MARKALI PROJELERİ çapraz analiz eden kıdemli danışmansın.
 
+{history_block}
 {prompt_summaries}
 
 TÜM PORTFÖY RAG BAĞLAMI (proje metadata + kayıtlı doküman özetleri/fiyat listeleri):
