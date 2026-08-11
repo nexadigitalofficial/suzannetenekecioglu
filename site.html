@@ -1849,6 +1849,21 @@
                     </div>
                 </div>
 
+                <!-- Zihin Haritası Paneli: seçimlerin canlı rehber özeti (NotebookLM tarzı) -->
+                <div id="mindmap-panel" style="display:none; margin-bottom:1.5rem; padding:1.25rem 1.5rem; background:linear-gradient(135deg, rgba(0,113,227,0.05) 0%, rgba(94,92,230,0.06) 100%); border:1px solid rgba(0,113,227,0.18); border-radius:16px;">
+                    <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.8rem;">
+                        <span style="width:26px; height:26px; border-radius:8px; background:linear-gradient(135deg,#0071E3,#5E5CE6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px;"><i class="fa-solid fa-diagram-project"></i></span>
+                        <span style="font-size:14px; font-weight:700; color:var(--text-primary);">Akıllı Rehber — Seçim Zihin Haritası</span>
+                        <span id="mindmap-hint" style="font-size:11px; color:var(--text-secondary); margin-left:auto;">Seçimleriniz burada canlı olarak listelenir, WhatsApp ile danışmana iletebilirsiniz.</span>
+                    </div>
+                    <div id="mindmap-selections" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:0.8rem;"></div>
+                    <div id="mindmap-projects" style="display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto;"></div>
+                    <div style="display:flex; gap:0.6rem; margin-top:0.9rem; flex-wrap:wrap; align-items:center;">
+                        <button id="mindmap-wa-btn" onclick="mindMapToWhatsApp()" style="background:#25D366; color:#fff; border:none; padding:8px 16px; border-radius:24px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px;"><i class="fa-brands fa-whatsapp"></i> Seçimlerimi WhatsApp'a Gönder</button>
+                        <span style="font-size:11px; color:var(--text-secondary);" id="mindmap-note"></span>
+                    </div>
+                </div>
+
                 <div class="results-grid" id="results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;">
                     <!-- Dynamically populated matching cards -->
                 </div>
@@ -2430,9 +2445,24 @@
 
         let portfolioData = [];
         let projectsData = EMBEDDED_PROJECTS;
+        let nexaRegionData = [];
+        let nexaRegionByKey = {};
 
         let activeShowcaseTab = 'projects'; // DEFAULT IS PROJELER!
         let activeFilters = { priceMin: null, priceMax: null, rooms: null, location: null, ai: 'all' };
+
+        // Region index: RAG kaynaklı güncel bölge/fiyat verisi (project adı -> bilgi)
+        function regionKey(name) {
+            return String(name || '').toLowerCase().replace(/[^a-z0-9çğıöşü\s]/gi, '').replace(/\s+/g, ' ').trim();
+        }
+        function buildRegionIndex() {
+            nexaRegionByKey = {};
+            nexaRegionData.forEach(r => { nexaRegionByKey[regionKey(r.name)] = r; });
+        }
+        function getRegionFor(project) {
+            const k = regionKey(project.title || project.name || '');
+            return nexaRegionByKey[k] || null;
+        }
 
         // Formatting utilities
         function formatPrice(num) {
@@ -2562,13 +2592,18 @@
                     const imgSrc = item.thumbnail || item.image || '/static/img/pdf_previews/pdf_cover_1.png';
                     const safeName = (item.title || item.name || 'Prestij Projesi').replace(/'/g, "\'");
                     
-                    const priceText = item.price_display ? item.price_display : (item.price_min ? `${formatPrice(item.price_min)} - ${formatPrice(item.price_max)}` : 'Fiyat Sorulacak');
+                    const rg = getRegionFor(item);
+                    const priceText = item.price_display ? item.price_display
+                        : (rg && rg.price_display) ? rg.price_display
+                        : (item.price_min ? `${formatPrice(item.price_min)} - ${formatPrice(item.price_max)}` : '');
 
                     const videoBtn = item.has_video ? `<button class="btn btn-primary" onclick="event.stopPropagation(); embedDriveVideoOnSiteCard('${item.id}')"><i class="fa-solid fa-play"></i> Tanıtım Filmi</button>` : '';
                     const slideshowBtn = `<button class="btn btn-outline" style="background:rgba(255,215,0,0.1); color:#D97706; border-color:rgba(255,215,0,0.35);" onclick="event.stopPropagation(); embedSlideshowOnSiteCard('${item.id}')"><i class="fa-solid fa-images"></i> Slayt Sunumu</button>`;
                     const reportBtn = `<button class="btn btn-outline" style="background:rgba(0,113,227,0.08); color:var(--accent); border-color:rgba(0,113,227,0.25);" onclick="event.stopPropagation(); openProjectReport('${item.id}')"><i class="fa-solid fa-brain"></i> Zeka Raporu</button>`;
 
-                    const waMsg = `Merhaba Suzanne Hanım, ${safeName} projesi hakkında detaylı bilgi ve sunum almak istiyorum.`;
+                    const waMsg = priceText
+                        ? `Merhaba Suzanne Hanım, ${safeName} projesi hakkında detaylı bilgi ve sunum almak istiyorum.`
+                        : `Merhaba Suzanne Hanım, ${safeName} projesinin güncel fiyat listesini rica ediyorum.`;
                     const waUrl = `https://wa.me/905354895656?text=${encodeURIComponent(waMsg)}`;
 
                     const html = `
@@ -2584,7 +2619,9 @@
                                 <div class="card-location"><i class="fa-solid fa-location-dot"></i> ${item.location || 'Ankara'}</div>
                                 <div class="card-tags">${roomTags}</div>
                                 <div class="card-footer" style="flex-direction:column; align-items:flex-start; gap:1rem; margin-top: auto;">
-                                    <span class="card-price" style="font-size:16px; font-weight:700; color:var(--accent);">${priceText}</span>
+                                    ${priceText
+                                        ? `<span class="card-price" style="font-size:16px; font-weight:700; color:var(--accent);">${priceText}</span>`
+                                        : `<a href="${waUrl}" target="_blank" style="font-size:14px; font-weight:700; color:#128C7E; text-decoration:none;"><i class="fa-brands fa-whatsapp"></i> Güncel Fiyat Listesi İçin Danışın</a>`}
                                     <div class="card-actions" style="width:100%; flex-wrap:wrap; gap:6px;">
                                         ${videoBtn}
                                         ${slideshowBtn}
@@ -2708,55 +2745,38 @@
             const container = document.getElementById('location-filters');
             if(!container) return;
 
-            const locCounts = {};
-            
-            // Count from projectsData
-            if(Array.isArray(projectsData)) {
-                projectsData.forEach(p => {
-                    const city = p.city || p.district || '';
-                    if(city && city.length > 2) {
-                        locCounts[city] = (locCounts[city] || 0) + 1;
-                    }
-                    const loc = p.location || '';
-                    const parts = loc.split(',');
-                    parts.forEach(part => {
-                        const clean = part.trim();
-                        if(clean && clean.length > 2 && !clean.includes('Mah') && !clean.includes('Sk') && !clean.includes('Cad')) {
-                            if(clean !== city) locCounts[clean] = (locCounts[clean] || 0) + 1;
-                        }
-                    });
+            container.innerHTML = '<span style="color:var(--text-secondary); font-size:14px;"><i class="fa-solid fa-circle-notch fa-spin"></i> Bölge verisi yükleniyor...</span>';
+
+            fetch('/api/nexa-regions').then(r => r.json()).then(j => {
+                if(!j.success || !Array.isArray(j.data) || j.data.length === 0) {
+                    container.innerHTML = '<span style="color:var(--text-secondary); font-size:14px;">Bölge bilgisi yüklenemedi.</span>';
+                    return;
+                }
+                nexaRegionData = j.data;
+                buildRegionIndex();
+                renderProjectsCarousel();
+
+                const ilCounts = {}, ilceCounts = {};
+                j.data.forEach(p => {
+                    const il = (p.il || 'Ankara').trim();
+                    const ilce = (p.ilce || '').trim();
+                    if(il) ilCounts[il] = (ilCounts[il] || 0) + 1;
+                    if(ilce) ilceCounts[ilce] = (ilceCounts[ilce] || 0) + 1;
                 });
-            }
 
-            // Count from portfolioData
-            if(Array.isArray(portfolioData)) {
-                portfolioData.forEach(p => {
-                    const loc = p.location || p.loc || '';
-                    const parts = loc.split(',');
-                    parts.forEach(part => {
-                        const clean = part.trim();
-                        if(clean && clean.length > 2) {
-                            locCounts[clean] = (locCounts[clean] || 0) + 1;
-                        }
-                    });
+                const chips = [];
+                Object.keys(ilCounts).sort((a, b) => ilCounts[b] - ilCounts[a]).forEach(il => {
+                    const isActive = activeFilters.location === il ? 'active' : '';
+                    chips.push(`<button class="chip ${isActive}" data-loc="${il}" onclick="toggleLocationFilter('${il}', this)"><i class="fa-solid fa-city"></i> ${il} <span style="background:rgba(0,113,227,0.15); color:var(--accent); padding:2px 7px; border-radius:10px; font-size:11px; margin-left:4px;">${ilCounts[il]}</span></button>`);
                 });
-            }
-
-            // Sort locations by count descending
-            const sortedLocs = Object.keys(locCounts).sort((a, b) => locCounts[b] - locCounts[a]);
-
-            if(sortedLocs.length === 0) {
-                container.innerHTML = '<span style="color:var(--text-secondary); font-size:14px;">Bölge bilgisi güncelleniyor...</span>';
-                return;
-            }
-
-            container.innerHTML = sortedLocs.map(loc => {
-                const count = locCounts[loc];
-                const isActive = activeFilters.location === loc ? 'active' : '';
-                return `<button class="chip ${isActive}" data-loc="${loc}" onclick="toggleLocationFilter('${loc}', this)">
-                    <i class="fa-solid fa-location-dot"></i> ${loc} <span style="background:rgba(0,113,227,0.15); color:var(--accent); padding:2px 7px; border-radius:10px; font-size:11px; margin-left:4px;">${count}</span>
-                </button>`;
-            }).join('');
+                Object.keys(ilceCounts).sort((a, b) => ilceCounts[b] - ilceCounts[a]).forEach(ilce => {
+                    const isActive = activeFilters.location === ilce ? 'active' : '';
+                    chips.push(`<button class="chip ${isActive}" data-loc="${ilce}" onclick="toggleLocationFilter('${ilce}', this)"><i class="fa-solid fa-location-dot"></i> ${ilce} <span style="background:rgba(0,113,227,0.15); color:var(--accent); padding:2px 7px; border-radius:10px; font-size:11px; margin-left:4px;">${ilceCounts[ilce]}</span></button>`);
+                });
+                container.innerHTML = chips.join('');
+            }).catch(() => {
+                container.innerHTML = '<span style="color:var(--text-secondary); font-size:14px;">Bölge bilgisi yüklenemedi. Sayfayı yenileyin.</span>';
+            });
         }
 
         function clearActiveChips(containerId) {
@@ -2817,6 +2837,87 @@
             applyFilters();
         }
 
+        // ─── ZİHİN HARİTASI: seçimlerin canlı rehber özeti (NotebookLM tarzı) ───
+        function activeFilterLabels() {
+            const labels = [];
+            if(activeFilters.location) labels.push(`<span style="background:rgba(0,113,227,0.12); color:var(--accent); padding:3px 10px; border-radius:14px; font-size:12px; font-weight:700;"><i class="fa-solid fa-location-dot"></i> Bölge: ${escapeHtml(activeFilters.location)}</span>`);
+            if(activeFilters.priceMin !== null) {
+                const label = activeFilters.priceMax >= 999999999
+                    ? `${formatPrice(activeFilters.priceMin)} ve üzeri`
+                    : `${formatPrice(activeFilters.priceMin)} - ${formatPrice(activeFilters.priceMax)}`;
+                labels.push(`<span style="background:rgba(52,199,89,0.12); color:#1E8E3E; padding:3px 10px; border-radius:14px; font-size:12px; font-weight:700;"><i class="fa-solid fa-tag"></i> Fiyat: ${label}</span>`);
+            }
+            if(activeFilters.rooms) labels.push(`<span style="background:rgba(255,149,0,0.14); color:#C77700; padding:3px 10px; border-radius:14px; font-size:12px; font-weight:700;"><i class="fa-solid fa-door-open"></i> ${escapeHtml(activeFilters.rooms)}</span>`);
+            if(activeFilters.ai !== 'all') {
+                const aiLabels = { 'high_score': 'AI Skoru 9.0+', 'ready': 'Hemen Teslim / Hazır', 'verified': 'TKGM Parsel Onaylı' };
+                labels.push(`<span style="background:rgba(94,92,230,0.12); color:#5E5CE6; padding:3px 10px; border-radius:14px; font-size:12px; font-weight:700;"><i class="fa-solid fa-brain"></i> ${aiLabels[activeFilters.ai] || activeFilters.ai}</span>`);
+            }
+            const kw = document.getElementById('filter-keyword-input');
+            if(kw && kw.value.trim()) labels.push(`<span style="background:rgba(0,0,0,0.06); color:var(--text-secondary); padding:3px 10px; border-radius:14px; font-size:12px; font-weight:700;"><i class="fa-solid fa-magnifying-glass"></i> "${escapeHtml(kw.value.trim())}"</span>`);
+            return labels;
+        }
+
+        function updateMindMap(matchedItems) {
+            const panel = document.getElementById('mindmap-panel');
+            if(!panel) return;
+            const labels = activeFilterLabels();
+            const selBox = document.getElementById('mindmap-selections');
+            const projBox = document.getElementById('mindmap-projects');
+            const note = document.getElementById('mindmap-note');
+
+            if(labels.length === 0 && (!matchedItems || matchedItems.length === 0)) {
+                panel.style.display = 'none';
+                return;
+            }
+            panel.style.display = 'block';
+            if(selBox) selBox.innerHTML = labels.join('') || '<span style="color:var(--text-secondary); font-size:12px;">Henüz seçim yapılmadı — tüm projeler listeleniyor.</span>';
+
+            const projects = (matchedItems || []).filter(m => m.type === 'project');
+            const portfolios = (matchedItems || []).filter(m => m.type === 'portfolio');
+            if(projBox) {
+                if(projects.length === 0 && portfolios.length === 0) {
+                    projBox.innerHTML = '<span style="color:var(--text-secondary); font-size:12px;">Seçimlerinize uyan proje bulunamadı.</span>';
+                } else {
+                    const rows = [];
+                    projects.slice(0, 12).forEach(m => {
+                        const p = m.data;
+                        const rg = getRegionFor(p);
+                        const loc = [p.regionIlce, p.regionMah, p.regionIl].filter(Boolean).join(', ') || p.location || 'Ankara';
+                        rows.push(`<div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.75); border:1px solid rgba(0,0,0,0.05); border-radius:10px; padding:7px 10px; font-size:12px;">
+                            <i class="fa-solid fa-building" style="color:var(--accent);"></i>
+                            <strong style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(p.title || p.name || '')}</strong>
+                            <span style="color:var(--text-secondary);">${escapeHtml(loc)}</span>
+                            <span style="font-weight:700; color:var(--accent);">${escapeHtml(p.price_display || 'Fiyat için danışın')}</span>
+                            <span style="font-size:11px; color:var(--text-secondary);">${escapeHtml((p.rooms || []).join(' · '))}</span>
+                        </div>`);
+                    });
+                    portfolios.slice(0, 6).forEach(m => {
+                        const p = m.data;
+                        rows.push(`<div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.75); border:1px solid rgba(0,0,0,0.05); border-radius:10px; padding:7px 10px; font-size:12px;">
+                            <i class="fa-solid fa-scroll" style="color:#25D366;"></i>
+                            <strong style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(p.title || '')}</strong>
+                            <span style="font-weight:700; color:var(--accent);">${escapeHtml(p.price_display || '')}</span>
+                            <span style="font-size:11px; color:var(--text-secondary);">${escapeHtml((p.rooms || '').toString())}</span>
+                        </div>`);
+                    });
+                    projBox.innerHTML = rows.join('');
+                }
+            }
+            if(note) note.textContent = `${(matchedItems || []).length} eşleşme — seçimlerinizi danışmana WhatsApp'tan iletin.`;
+        }
+
+        function mindMapToWhatsApp() {
+            const labels = activeFilterLabels();
+            const selTexts = labels.map(l => l.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+            const projBox = document.getElementById('mindmap-projects');
+            const projNames = projBox ? Array.from(projBox.querySelectorAll('strong')).map(s => s.textContent.trim()).slice(0, 8) : [];
+            let msg = 'Merhaba Suzanne Hanım, detaylı arama kriterlerim ve ilgilendiğim projeler:';
+            if(selTexts.length) msg += '\n\n' + selTexts.join('\n• ');
+            if(projNames.length) msg += '\n\nİlgilendiğim projeler:\n• ' + projNames.join('\n• ');
+            msg += '\n\nUygun projeler için görüşme talep ediyorum.';
+            window.open('https://wa.me/905354895656?text=' + encodeURIComponent(msg), '_blank');
+        }
+
         function applyFilters() {
             const grid = document.getElementById('results-grid');
             const countBadge = document.getElementById('results-count-badge');
@@ -2832,13 +2933,21 @@
             if(Array.isArray(projectsData)) {
                 projectsData.forEach((p, idx) => {
                     let match = true;
+                    const rg = getRegionFor(p);
+                    if (rg) {
+                        if(!p.price_display && rg.price_display) p.price_display = rg.price_display;
+                        if(!p.rooms && rg.room_info) p.rooms = rg.room_info.split(',').map(s => s.trim()).filter(Boolean);
+                        if(rg.tkgm_verified) p.tkgm_verified = true;
+                        if(!p.ada_no && rg.summary) p.regionSummary = rg.summary;
+                        p.regionIl = rg.il; p.regionIlce = rg.ilce; p.regionMah = rg.mahalle;
+                    }
                     const pRooms = p.rooms || p.room_types || [];
                     const pName = (p.title || p.name || '').toLowerCase();
                     const pDev = (p.developer || '').toLowerCase();
                     const pDesc = (p.description || '').toLowerCase();
                     const pAda = (p.ada_no || '').toLowerCase();
                     const pParsel = (p.parsel_no || '').toLowerCase();
-                    const locStr = ((p.city || '') + ' ' + (p.district || '') + ' ' + (p.location || '')).toLowerCase();
+                    const locStr = ((p.city || '') + ' ' + (p.district || '') + ' ' + (p.location || '') + ' ' + (p.regionIl || '') + ' ' + (p.regionIlce || '') + ' ' + (p.regionMah || '')).toLowerCase();
                     const aiScore = (9.8 - (idx * 0.15)).toFixed(1);
 
                     // Keyword search matching
@@ -2927,10 +3036,16 @@
                     const roomTags = (Array.isArray(rooms) ? rooms : []).map(r => `<span class="tag" style="background:rgba(0,113,227,0.08); color:var(--accent); padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600;">${r}</span>`).join(' ');
                     const imgSrc = item.thumbnail || item.image || '/static/img/pdf_previews/pdf_cover_2.png';
                     const safeName = (item.title || item.name || 'Prestij Projesi').replace(/'/g, "\'");
-                    const priceText = item.price_display ? item.price_display : (item.price_min ? `${formatPrice(item.price_min)} - ${formatPrice(item.price_max)}` : 'Fiyat Sorulacak');
+                    const hasPrice = !!(item.price_display || item.price_min);
+                    const priceText = item.price_display ? item.price_display : (item.price_min ? `${formatPrice(item.price_min)} - ${formatPrice(item.price_max)}` : '');
 
-                    const waMsg = `Merhaba Suzanne Hanım, ${safeName} projesi hakkında bilgi almak istiyorum.`;
+                    const waMsg = hasPrice
+                        ? `Merhaba Suzanne Hanım, ${safeName} projesi hakkında bilgi almak istiyorum.`
+                        : `Merhaba Suzanne Hanım, ${safeName} projesinin güncel fiyat listesini rica ediyorum.`;
                     const waUrl = `https://wa.me/905354895656?text=${encodeURIComponent(waMsg)}`;
+                    const priceHtml = hasPrice
+                        ? `<div style="font-size:16px; font-weight:700; color:var(--accent); margin-bottom:10px;">${priceText}</div>`
+                        : `<div style="font-size:13px; font-weight:700; margin-bottom:10px;"><a href="${waUrl}" target="_blank" style="color:#128C7E; text-decoration:none;"><i class="fa-brands fa-whatsapp"></i> Güncel Fiyat Listesi İçin Danışın</a></div>`;
 
                     const cardHtml = `
                         <div class="card project-card" onclick="${item.has_video ? `openVideoModal('${item.id}')` : `openProjectReport('${item.id}')`}" style="display:flex; flex-direction:column; background:#fff; border-radius:16px; overflow:hidden; border:1px solid rgba(0,0,0,0.06); box-shadow:0 4px 20px rgba(0,0,0,0.05); transition:all 0.3s ease;">
@@ -2947,7 +3062,7 @@
                                 ${item.ada_no ? `<div style="font-size:11px; color:var(--accent); font-weight:600; margin-bottom:10px;"><i class="fa-solid fa-stamp"></i> Ada ${item.ada_no} / Parsel ${item.parsel_no || ''} (TKGM Onaylı)</div>` : ''}
                                 <div style="margin-bottom:14px;">${roomTags}</div>
                                 <div style="margin-top:auto; padding-top:12px; border-top:1px solid rgba(0,0,0,0.06);">
-                                    <div style="font-size:16px; font-weight:700; color:var(--accent); margin-bottom:10px;">${priceText}</div>
+                                    ${priceHtml}
                                     <div style="display:flex; flex-wrap:wrap; gap:6px;">
                                         <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); embedDriveVideoOnSiteCard('${item.id}')" style="font-size:12px; padding:6px 12px;"><i class="fa-solid fa-play"></i> Tanıtım Filmi</button>
                                         <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); embedSlideshowOnSiteCard('${item.id}')" style="font-size:12px; padding:6px 12px; background:rgba(255,215,0,0.1); color:#D97706; border-color:rgba(255,215,0,0.3);"><i class="fa-solid fa-images"></i> Slayt Sunumu</button>
@@ -2989,6 +3104,7 @@
                     grid.insertAdjacentHTML('beforeend', cardHtml);
                 }
             });
+            updateMindMap(matchedItems);
         }
 
         // Chatbot Widget Logic

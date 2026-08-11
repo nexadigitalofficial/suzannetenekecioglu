@@ -56,7 +56,9 @@ PROJE_SINONIMLERI = {
 }
 
 def norm_text(t):
-    return (t or "").lower().replace("ı", "i").replace("ş", "s").replace("ğ", "g").replace("ü", "u").replace("ö", "o").replace("ç", "c")
+    s = (t or "").replace("İ", "i").replace("I", "ı").lower()
+    s = s.replace("ı", "i").replace("ş", "s").replace("ğ", "g").replace("ü", "u").replace("ö", "o").replace("ç", "c")
+    return s.replace("\u0307", "")
 
 def extract_budget(text):
     """Bütçe: '5 milyon', '3.5m', '60 bin', '5000000', '5.000.000', '₺5M', '5-10M', '5 buçuk milyon'."""
@@ -147,10 +149,11 @@ def extract_goals(text):
 def extract_keywords_and_projects(text):
     """Kullanıcının sorgusunda adı geçen projeler (M7: kısa sinonim, uzun eşleşmenin parçasıysa elenir)."""
     t = norm_text(text)
-    keys = sorted((k for k in PROJE_SINONIMLERI if k in t), key=len, reverse=True)
+    matched = [k for k in PROJE_SINONIMLERI if norm_text(k) in t]
+    keys = sorted(matched, key=len, reverse=True)
     out = []
     for k in keys:
-        if any(k in k2 and k != k2 for k2 in keys):
+        if any(norm_text(k) in norm_text(k2) and norm_text(k) != norm_text(k2) for k2 in keys):
             continue
         out.append(PROJE_SINONIMLERI[k])
     # Tam adı geçen proje varsa bölüm genişletmesi gereksiz (örn. "neva start bravo" → yalnızca NEVA)
@@ -342,7 +345,7 @@ def item_region_label(item):
 
 def item_price_label(item):
     pd = item.get("price_display")
-    return pd if pd else "Fiyat Sorulacak"
+    return pd if pd else "Güncel Fiyat Listesi İçin Danışın"
 
 def _load_project_summaries():
     try:

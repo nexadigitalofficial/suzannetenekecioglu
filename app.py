@@ -327,6 +327,38 @@ def api_nexa_summaries():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
+@app.route("/api/nexa-regions", methods=["GET"])
+def api_nexa_regions():
+    """Bölge/Konum Seçimi + zihin haritası paneli için RAG kaynaklı güncel proje verisi."""
+    try:
+        import sqlite3
+        conn = sqlite3.connect(f"file:{NEXA_DB_PATH}?mode=ro", uri=True)
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("""
+            SELECT id, name, il, ilce, mahalle, location, description, ada_no, parsel_no,
+                   price_display, room_info, tkgm_verified
+            FROM projects WHERE COALESCE(is_portfolio,0) = 0 ORDER BY name
+        """).fetchall()
+        conn.close()
+        out = []
+        for r in rows:
+            p = dict(r)
+            loc = p.get("location") or f"{p.get('mahalle') or ''} {p.get('ilce') or ''} {p.get('il') or ''}".strip()
+            out.append({
+                "name": p["name"],
+                "il": p.get("il") or "",
+                "ilce": p.get("ilce") or "",
+                "mahalle": p.get("mahalle") or "",
+                "location": loc,
+                "price_display": p.get("price_display") or "",
+                "room_info": p.get("room_info") or "",
+                "tkgm_verified": bool(p.get("tkgm_verified")),
+                "summary": get_project_summary(p["name"]) or "",
+            })
+        return jsonify({"success": True, "count": len(out), "data": out})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
 @app.route("/nexa-docs/<path:filename>")
 def nexa_docs_file(filename):
     base = NEXA_DOCS_DIR.resolve()
