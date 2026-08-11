@@ -4,3 +4,6 @@ __pycache__/
 .env
 config.json
 logs/
+
+nexa_embedding_cache.json
+*.db

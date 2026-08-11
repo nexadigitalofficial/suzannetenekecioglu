@@ -15,7 +15,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
-from flask import Flask, render_template_string, send_file, send_from_directory, request, jsonify, Response, redirect
+from flask import Flask, send_file, send_from_directory, request, jsonify, Response, redirect
 
 try:
     import requests as _requests
@@ -81,11 +81,21 @@ logger = logging.getLogger("nexa.app")
 _telemetry_lock = threading.Lock()
 
 
+_TELEMETRY_MAX_BYTES = 10 * 1024 * 1024
+
+
 def telemetry(event: dict):
     try:
         line = json.dumps({"ts": datetime.now().isoformat(), **event}, ensure_ascii=False)
         with _telemetry_lock:
-            with open(BASE_DIR / CFG["telemetry_file"], "a", encoding="utf-8") as f:
+            tele_file = BASE_DIR / CFG["telemetry_file"]
+            # O3: 10 MB üzeri JSONL'i .1'e rotate et, yenisini başlat
+            if tele_file.exists() and tele_file.stat().st_size > _TELEMETRY_MAX_BYTES:
+                try:
+                    tele_file.replace(tele_file.with_suffix(".jsonl.1"))
+                except OSError:
+                    pass
+            with open(tele_file, "a", encoding="utf-8") as f:
                 f.write(line + "\n")
     except Exception:
         pass
@@ -106,6 +116,10 @@ _rate_hits = {}
 def _check_rate_limit(ip):
     now = time.time()
     with _rate_lock:
+        # O5: hafıza temizliği — 60 saniyeden eski IP kayıtlarını sil
+        for old_ip in [k for k, ts_list in _rate_hits.items()
+                       if not ts_list or now - ts_list[-1] >= 60]:
+            del _rate_hits[old_ip]
         hits = [t for t in _rate_hits.get(ip, []) if now - t < 60]
         if len(hits) >= int(CFG.get("chat_rate_limit_per_min", 12)):
             return False
@@ -336,7 +350,29 @@ def site():
 
 @app.route("/static/<path:filename>")
 def static_files(filename):
-    return send_from_directory(STATIC_DIR, filename)
+    resp = send_from_directory(STATIC_DIR, filename)
+    resp.headers["Cache-Control"] = "public, max-age=86400"
+    return resp
+
+# ─── P15: güvenlik başlıkları (tüm yanıtlara) ───
+@app.after_request
+def _add_security_headers(resp):
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    return resp
+
+# ─── JSON hata handler'ları (yalnızca /api/ prefix'li istekler) ───
+@app.errorhandler(404)
+def _handle_404(err):
+    if request.path.startswith("/api/"):
+        return jsonify({"success": False, "message": "Uç nokta bulunamadı"}), 404
+    return "Sayfa bulunamadı", 404
+
+@app.errorhandler(500)
+def _handle_500(err):
+    logger.exception("Sunucu hatasi")
+    if request.path.startswith("/api/"):
+        return jsonify({"success": False, "message": "Sunucu hatası"}), 500
+    return "Sunucu hatası", 500
 
 @app.route("/projeler/<path:filename>")
 def projeler_files(filename):
@@ -423,9 +459,22 @@ def stream_video(project_id):
     folder_name = project.get("folder_name")
     target_dir = PROJELER_DIR / folder_name
 
-    # P3: TANITIM (SLIDESHOW olmayan) ve en büyük dosya önceliği
+    # P3: MP4 seçim önceliği — 1) tanıtım, 2) slayt, 3) en büyük dosya (500KB filtre korunur)
+    _PRIORITY_WORDS_1 = ("tanitim", "tanıtım", "intro", "main", "ana")
+    _PRIORITY_WORDS_2 = ("slayt", "slideshow", "slaytlar")
+
+    def _mp4_priority(f: Path):
+        name = f.stem.lower()
+        for i, kw in enumerate(_PRIORITY_WORDS_1):
+            if kw in name:
+                return (0, i, -f.stat().st_size)
+        for i, kw in enumerate(_PRIORITY_WORDS_2):
+            if kw in name:
+                return (1, i, -f.stat().st_size)
+        return (2, 0, -f.stat().st_size)
+
     mp4_files = list(target_dir.glob("*.mp4")) if target_dir.exists() else []
-    mp4_files.sort(key=lambda f: (1 if f.name.upper().startswith("SLIDESHOW") else 0, -f.stat().st_size))
+    mp4_files.sort(key=_mp4_priority)
     real_mp4 = None
     for file in mp4_files:
         if file.stat().st_size > 500 * 1024:
@@ -496,168 +545,7 @@ def api_project_report(project_id):
     report += "📞 0535 489 56 56\nWhatsApp üzerinden anlık bilgi alabilirsiniz."
     return jsonify({"success": True, "report": report})
 
-# ─── FRONTEND TEMPLATE ───
-MAIN_TEMPLATE = """
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CB VIP Projeleri | Cloud Stream Galerisi (Klasör 3)</title>
-    <meta name="description" content="Coldwell Banker VIP - Bulut Altyapılı Kesintisiz Proje Oynatıcısı">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <style>
-        :root {
-            --bg: #0B0F17;
-            --surface: #151D2A;
-            --surface-card: #1C2638;
-            --accent-cyan: #06B6D4;
-            --accent-blue: #3B82F6;
-            --text-primary: #F8FAFC;
-            --text-secondary: #94A3B8;
-            --border: rgba(255, 255, 255, 0.08);
-            --radius: 20px;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-primary); line-height: 1.6; }
-
-        .navbar {
-            position: sticky; top: 0; z-index: 100;
-            background: rgba(11, 15, 23, 0.85); backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border);
-            padding: 1.2rem 5%; display: flex; justify-content: space-between; align-items: center;
-        }
-
-        .logo { font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 700; color: var(--accent-cyan); display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .cloud-badge { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-
-        .hero { text-align: center; padding: 4rem 1rem 2rem; max-width: 900px; margin: 0 auto; }
-        .hero h1 { font-family: 'Outfit', sans-serif; font-size: 42px; font-weight: 700; margin-bottom: 1rem; }
-        .hero p { color: var(--text-secondary); font-size: 17px; margin-bottom: 2rem; }
-
-        .search-bar { max-width: 500px; margin: 0 auto 2rem; position: relative; }
-        .search-bar input { width: 100%; padding: 1rem 1rem 1rem 3rem; background: var(--surface); border: 1px solid var(--border); border-radius: 30px; color: #fff; font-size: 15px; outline: none; }
-        .search-bar i { position: absolute; left: 1.2rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
-
-        .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 28px; padding: 0 5%; max-width: 1400px; margin: 0 auto 4rem; }
-
-        .project-card { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; transition: transform 0.3s ease; }
-        .project-card:hover { transform: translateY(-6px); border-color: rgba(6, 182, 212, 0.4); }
-
-        .card-media-wrapper { position: relative; width: 100%; height: 230px; background: #000; overflow: hidden; }
-        .card-media-wrapper video { width: 100%; height: 100%; object-fit: cover; }
-        
-        .card-body { padding: 1.4rem; display: flex; flex-direction: column; gap: 12px; flex-grow: 1; }
-        .card-title { font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 600; }
-        .card-meta { display: flex; gap: 15px; font-size: 13px; color: var(--text-secondary); }
-
-        .card-actions { display: flex; gap: 10px; margin-top: auto; }
-        .btn { flex: 1; padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
-        .btn-primary { background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%); color: #fff; }
-        .btn-secondary { background: var(--surface); color: #fff; border: 1px solid var(--border); }
-
-        /* Modal */
-        .modal { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
-        .modal-content { background: var(--surface-card); border-radius: var(--radius); width: 90%; max-width: 950px; height: 85vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
-        .modal-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .modal-body { flex-grow: 1; background: #000; }
-        .modal-body iframe, .modal-body video { width: 100%; height: 100%; border: none; }
-        .close-btn { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
-    </style>
-</head>
-<body>
-    <header class="navbar">
-        <a href="/" class="logo"><i class="fa-solid fa-cloud"></i> COLDWELL BANKER VIP</a>
-        <div style="display:flex; gap:12px;">
-            <a href="/site" class="cloud-badge" style="text-decoration:none;"><i class="fa-solid fa-globe"></i> Kişisel Portal (/site)</a>
-            <span class="cloud-badge"><i class="fa-solid fa-bolt"></i> Bulut Stream (Sıfır İzin Engeli)</span>
-        </div>
-    </header>
-
-    <section class="hero">
-        <h1>CB VIP Bulut Medya Galerisi</h1>
-        <p>Erişim izni engeli ve Google giriş zorunluluğu olmayan kesintisiz video & sunum altyapısı.</p>
-        <div class="search-bar">
-            <i class="fa-solid fa-search"></i>
-            <input type="text" id="searchInput" placeholder="Proje ara..." onkeyup="filterProjects()">
-        </div>
-    </section>
-
-    <main class="projects-grid" id="projectsGrid">
-        {% for project in projects %}
-        <div class="project-card" data-title="{{ project.title|lower }}">
-            <div class="card-media-wrapper">
-                <video controls preload="metadata" poster="{{ project.thumbnail }}">
-                    <source src="{{ project.cloud_video_url }}" type="video/mp4">
-                </video>
-            </div>
-            <div class="card-body">
-                <h3 class="card-title">{{ project.title }}</h3>
-                <div class="card-meta">
-                    <span><i class="fa-solid fa-cloud-arrow-up" style="color:var(--accent-cyan);"></i> Bulut Stream Active</span>
-                    <span><i class="fa-solid fa-shield-check" style="color:#22C55E;"></i> Halka Açık</span>
-                </div>
-                <div class="card-actions">
-                    {% if project.has_presentation %}
-                    <button class="btn btn-secondary" onclick="openPdfModal('{{ project.title }}', '/{{ project.presentations[0].path }}')"><i class="fa-solid fa-file-pdf"></i> Sunum PDF</button>
-                    {% endif %}
-                    <button class="btn btn-primary" onclick="openVideoModal('{{ project.title }}', '{{ project.cloud_video_url }}')"><i class="fa-solid fa-expand"></i> Tam Ekran İzle</button>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </main>
-
-    <div class="modal" id="mediaModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Medya Önizleme</h3>
-                <button class="close-btn" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body" id="modalContainer"></div>
-        </div>
-    </div>
-
-    <script>
-        function openPdfModal(title, pdfPath) {
-            document.getElementById('modalTitle').innerText = title + ' — PDF Sunum';
-            document.getElementById('modalContainer').innerHTML = `<iframe src="${pdfPath}"></iframe>`;
-            document.getElementById('mediaModal').classList.add('active');
-        }
-
-        function openVideoModal(title, videoUrl) {
-            document.getElementById('modalTitle').innerText = title + ' — Bulut Oynatıcı';
-            document.getElementById('modalContainer').innerHTML = `<video controls autoplay src="${videoUrl}" style="width:100%; height:100%;"></video>`;
-            document.getElementById('mediaModal').classList.add('active');
-        }
-
-        function closeModal() {
-            document.getElementById('mediaModal').classList.remove('active');
-            document.getElementById('modalContainer').innerHTML = '';
-        }
-
-        function filterProjects() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const cards = document.querySelectorAll('.project-card');
-            cards.forEach(card => {
-                const title = card.getAttribute('data-title');
-                if (title.includes(query)) {
-                    card.style.display = 'flex';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
-    </script>
-</body>
-</html>
-"""
-
+# ─── ANA SAYFA: /site vitrinine yönlendir (eski galeri şablonu kaldırıldı, P14) ───
 @app.route("/")
 def index():
     return redirect("/site", code=302)

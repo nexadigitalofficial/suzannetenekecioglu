@@ -15,7 +15,22 @@ from pathlib import Path
 
 logger = logging.getLogger("nexa.rag")
 
-NEXA_ROOT = Path(r"C:\Users\USER\Desktop\NEXA_PRIME_v2_ENTERPRISE")
+
+def _resolve_nexa_root():
+    """config.json -> nexa_db_dir anahtarını okur (D6 taşınabilirlik); yoksa hardcoded yol."""
+    candidates = [Path(__file__).resolve().parent / "config.json"]
+    for cfg in candidates:
+        try:
+            data = json.loads(cfg.read_text(encoding="utf-8"))
+            d = data.get("nexa_db_dir")
+            if d:
+                return Path(d)
+        except Exception:
+            continue
+    return Path(r"C:\Users\USER\Desktop\NEXA_PRIME_v2_ENTERPRISE")
+
+
+NEXA_ROOT = _resolve_nexa_root()
 DB_PATH = NEXA_ROOT / "nexa_database.db"
 DOCS_DIR = NEXA_ROOT / "static" / "documents"
 SUMMARIES_FILE = Path(r"C:\Users\USER\Desktop\3\nexa_project_summaries.json")
@@ -148,6 +163,29 @@ def build_project_context(db_id, query=None):
                 continue
             raw_chunks.append((f"[{r['category'] or 'Belge'} - {r['title']}]: {txt[:400]}", txt))
         chosen = _rank_chunks(query, raw_chunks) if query else raw_chunks
+        if query:
+            # P17: gerçek vektör araması önce denenir; yeterli sonuç varsa öne konur,
+            # yetersizse (embedding modeli yok / <2 eşleşme) eski keyword yöntemi aynen kullanılır.
+            try:
+                from nexa_vector_rag import vector_search
+                vres = vector_search(query, project_id=db_id, top_k=8)
+                if vres and len(vres) >= 2:
+                    chosen = []
+                    for vr in vres:
+                        t = (vr.get("chunk_text") or "").strip()
+                        if not t:
+                            continue
+                        title = vr.get("document_title") or "Belge"
+                        chosen.append((f"[{title}]: {t[:400]}", t))
+                    seen = {l[1][:60] for l in chosen}
+                    for line, txt in _rank_chunks(query, raw_chunks):
+                        if len(chosen) >= 12:
+                            break
+                        if txt[:60] not in seen:
+                            chosen.append((line, txt))
+                            seen.add(txt[:60])
+            except Exception as e:
+                logger.warning("Vektör arama devre disi, eski yontemle devam: %s", e)
         chunks = []
         for line, _txt in chosen[:12]:
             chunks.append(line)
@@ -379,6 +417,20 @@ _LOCATION_KEYWORDS = ("ulaşım", "aks", "yakınlık", "nerede", "çevre", "hast
                       "üniversite", "metro", "tramvay", "otoyol", "havalimanı", "avm",
                       "konum", "mesafe", "bölge", "site", "çevresinde", "manzara")
 
+# Y5/B9: Ollama 8K context'e sığmayan dev global bağlam için üst sınır
+# (Gemini 1M context destekliyor; kırpma yalnızca 8K yollardaki taşmayı önlemek için güvenlik bandı)
+MAX_PROMPT_CHARS = 20000
+
+
+def _trim_middle(text, limit=MAX_PROMPT_CHARS):
+    """Uzun bağlamı ortadan kırpar; baş (sistem kuralları) ve son (kullanıcı sorusu) korunur."""
+    if not text or len(text) <= limit:
+        return text
+    head_n = int(limit * 0.45)
+    tail_n = limit - head_n - len("...[BAĞLAM ORTADAN KIRPILDI (karakter sınırı)...]")
+    marker = "\n...[BAĞLAM ORTADAN KIRPILDI (karakter sınırı)]...\n"
+    return text[:head_n] + marker + text[-tail_n:]
+
 
 def _load_summaries():
     try:
@@ -563,6 +615,9 @@ Kurallar:
 5. Markdown formatında, madde ve tablo kullan. Cevabı 500 kelimeyi aşmadan Türkçe yaz.
 Sonuna şu iletişim satırını ekle: {CONTACT_LINE}
 """
+        # Y5/B9: dev global bağlam (42K+) Ollama 8K context'e sığmayabilir; ortadan kırp.
+        # Gemini 1M destekliyor, bu yüzden kırpma yalnızca taşma riskini önleyen güvenlik bandı.
+        system = _trim_middle(system, MAX_PROMPT_CHARS)
     try:
         reply = _gemini_generate(system)
         if reply and len(reply.strip()) > 20:

@@ -1525,6 +1525,7 @@
 
             /* E8: mobilde chat tam ekran deneyimi */
             .chat-window.open {
+                height: calc(100vh - 80px);
                 height: calc(100dvh - 80px);
                 max-height: none;
             }
@@ -3077,7 +3078,7 @@
             const message = input.value.trim();
             if (!message) return;
 
-            addChatMessage(escapeHtml(message), 'user');
+            addChatMessage(formatMarkdownReport(message), 'user');
             pushChatHistory('user', message);
             input.value = '';
 
@@ -3130,11 +3131,11 @@
                         botHtml += `
                             <div style="background:#fff; border-radius:12px; padding:10px 12px; border:1px solid rgba(0,113,227,0.18); box-shadow:0 4px 15px rgba(0,0,0,0.06); color:#1c1c1e;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                    <strong style="font-size:14px; color:var(--text-primary);">${p.title}</strong>
-                                    <span style="background:var(--accent); color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;">%${p.match_percent} Uyumlu</span>
+                                    <strong style="font-size:14px; color:var(--text-primary);">${escapeHtml(p.title)}</strong>
+                                    <span style="background:var(--accent); color:#fff; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;">%${escapeHtml(p.match_percent)} Uyumlu</span>
                                 </div>
-                                <div style="font-size:11px; color:#666; margin-bottom:4px;"><i class="fa-solid fa-location-dot" style="color:var(--accent);"></i> ${p.region} • <strong style="color:var(--accent);">${p.price_display}</strong></div>
-                                <div style="font-size:11px; background:rgba(0,113,227,0.06); padding:4px 8px; border-radius:8px; margin-bottom:8px; color:#333;">💡 ${p.rationale}</div>
+                                <div style="font-size:11px; color:#666; margin-bottom:4px;"><i class="fa-solid fa-location-dot" style="color:var(--accent);"></i> ${escapeHtml(p.region)} • <strong style="color:var(--accent);">${escapeHtml(p.price_display)}</strong></div>
+                                <div style="font-size:11px; background:rgba(0,113,227,0.06); padding:4px 8px; border-radius:8px; margin-bottom:8px; color:#333;">💡 ${escapeHtml(p.rationale)}</div>
                                 <div style="display:flex; flex-wrap:wrap; gap:4px;">
                                     <button class="btn btn-primary btn-sm" style="font-size:10px; padding:4px 8px;" onclick="event.stopPropagation(); openVideoModal('${p.id}')"><i class="fa-solid fa-play"></i> Tanıtım</button>
                                     <button class="btn btn-outline btn-sm" style="font-size:10px; padding:4px 8px; background:rgba(255,215,0,0.1); color:#D97706; border-color:rgba(255,215,0,0.3);" onclick="event.stopPropagation(); embedSlideshowOnSiteCard('${p.id}')"><i class="fa-solid fa-images"></i> Slayt</button>
@@ -3380,94 +3381,148 @@
         function formatMarkdownReport(reportText) {
             if(typeof reportText !== 'string') return '';
             const nl = String.fromCharCode(10);
+            const escaped = escapeHtml(reportText);
+            const lines = escaped.split(nl);
+
             let html = '';
-            let listOpen = false;
-            const lines = reportText.split(nl);
+            let listOpen = false, olOpen = false;
+            let tableRows = [], tableHasHeader = false;
+            let para = [], boldLines = null;
 
             const inline = (t) => t
                 .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*([^*]+)\*/g, '<em>$1</em>')
                 .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.06);padding:1px 4px;border-radius:4px;font-size:12px;">$1</code>');
 
-            const closeList = () => { if (listOpen) { html += '</ul>'; listOpen = false; } };
+            const closeLists = () => {
+                if (listOpen) { html += '</ul>'; listOpen = false; }
+                if (olOpen) { html += '</ol>'; olOpen = false; }
+            };
+            const flushPara = () => {
+                if (para.length) { html += '<div>' + inline(para.join('<br>')) + '</div>'; para = []; }
+            };
+            const flushTable = () => {
+                if (tableRows.length) {
+                    html += '<table style="width:100%;border-collapse:collapse;margin:8px 0;font-size:13px;">';
+                    tableRows.forEach((cells, i) => {
+                        const th = tableHasHeader && i === 0;
+                        html += '<tr>' + cells.map(c =>
+                            `<${th ? 'th' : 'td'} style="border:1px solid rgba(0,0,0,0.12);padding:5px 8px;text-align:left;${th ? 'background:rgba(0,113,227,0.06);font-weight:700;' : ''}">${inline(c)}</${th ? 'th' : 'td'}>`
+                        ).join('') + '</tr>';
+                    });
+                    html += '</table>';
+                }
+                tableRows = [];
+                tableHasHeader = false;
+            };
+            const flushBlock = () => { flushPara(); closeLists(); flushTable(); };
 
             for (let raw of lines) {
                 const line = raw.trim();
-                if (!line) { closeList(); html += '<div style="height:6px;"></div>'; continue; }
+                if (!line) {
+                    if (boldLines) { boldLines.push(''); continue; }
+                    flushBlock();
+                    html += '<div style="height:6px;"></div>';
+                    continue;
+                }
 
-                // Başlık: ### Başlık / ## Başlık / # Başlık
+                // Çok satırlı kalın blok: ** ile başlayıp (ayrı bir satırda) ** ile biten → <b> satırı
+                if (!boldLines && line.startsWith('**') && !line.slice(2).includes('**')) {
+                    flushBlock();
+                    boldLines = [line.slice(2)];
+                    continue;
+                }
+                if (boldLines && line.endsWith('**') && !line.startsWith('**')) {
+                    boldLines.push(line.slice(0, -2));
+                    html += '<div><b>' + inline(boldLines.join('<br>')) + '</b></div>';
+                    boldLines = null;
+                    continue;
+                }
+                if (boldLines) { boldLines.push(line); continue; }
+
+                // Başlık: ### / ## / # → h4 (sınıflı stil)
                 const h = line.match(/^(#{1,3})\s+(.*)$/);
                 if (h) {
-                    closeList();
+                    flushBlock();
                     const size = h[1].length === 1 ? '16px' : (h[1].length === 2 ? '15px' : '14px');
-                    html += `<div style="font-size:${size};font-weight:700;margin:10px 0 4px;">${inline(escapeHtml(h[2]))}</div>`;
+                    html += `<h4 style="font-size:${size};font-weight:700;margin:10px 0 4px;color:var(--text-primary);">${inline(h[2])}</h4>`;
                     continue;
                 }
 
-                // Liste: - madde / * madde
-                const li = line.match(/^[-*]\s+(.*)$/);
-                if (li) {
-                    if (!listOpen) { html += '<ul style="margin:6px 0 6px 0;padding-left:20px;">'; listOpen = true; }
-                    html += `<li style="margin:3px 0;">${inline(escapeHtml(li[1]))}</li>`;
-                    continue;
-                }
-
-                // Numara: 1. madde
-                const ol = line.match(/^\d+\.\s+(.*)$/);
-                if (ol) {
-                    closeList();
-                    html += `<div style="margin:3px 0;">${inline(escapeHtml(ol[1]))}</div>`;
-                    continue;
-                }
-
-                // Tablo: | A | B |  ve ayırıcı |---|---|
+                // Tablo: | A | B | → <table> (ayırıcı |---|---| satırı başlık satırını işaretler)
                 if (line.startsWith('|')) {
-                    closeList();
+                    flushPara();
+                    closeLists();
                     if (/^\|[\s\-:|]+\|$/.test(line) && line.includes('-')) {
-                        html += '<div style="height:4px;"></div>';
+                        tableHasHeader = tableRows.length > 0;
                         continue;
                     }
-                    const cells = line.replace(/^\|/, '').replace(/\|$/, '').split('|');
-                    html += '<div style="display:flex;gap:8px;border-bottom:1px solid rgba(0,0,0,0.1);padding:4px 0;">'
-                        + cells.map(c => `<span style="flex:1;">${inline(escapeHtml(c.trim()))}</span>`).join('')
-                        + '</div>';
+                    tableRows.push(line.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim()));
                     continue;
                 }
 
-                // Ayraç: --- / ***
+                // Liste: - madde / * madde → arka arkaya <ul>
+                const li = line.match(/^[-*]\s+(.*)$/);
+                if (li) {
+                    flushPara();
+                    flushTable();
+                    if (olOpen) { html += '</ol>'; olOpen = false; }
+                    if (!listOpen) { html += '<ul style="margin:6px 0 6px 0;padding-left:20px;">'; listOpen = true; }
+                    html += `<li style="margin:3px 0;">${inline(li[1])}</li>`;
+                    continue;
+                }
+
+                // Numara: 1. madde → <ol> (sayı/para kalıplarına dokunmaz: "2.400.000" boşluk olmadığı için eşleşmez)
+                const ol = line.match(/^(\d+)\.\s+(.*)$/);
+                if (ol) {
+                    flushPara();
+                    flushTable();
+                    if (listOpen) { html += '</ul>'; listOpen = false; }
+                    if (!olOpen) { html += '<ol style="margin:6px 0 6px 0;padding-left:20px;">'; olOpen = true; }
+                    html += `<li style="margin:3px 0;">${inline(ol[2])}</li>`;
+                    continue;
+                }
+
+                // Ayraç: --- / *** / ===
                 if (/^[-=*_]{3,}$/.test(line)) {
-                    closeList();
+                    flushBlock();
                     html += '<div style="border-top:1px solid rgba(0,0,0,0.1);margin:8px 0;"></div>';
                     continue;
                 }
 
-                // Düz metin
-                closeList();
-                html += '<div>' + inline(escapeHtml(line)) + '</div>';
+                // Düz metin → arka arkaya satırlar <br> ile tek paragrafta birleşir
+                closeLists();
+                flushTable();
+                para.push(line);
             }
-            closeList();
+
+            if (boldLines) { html += '<div><b>' + inline(boldLines.join('<br>')) + '</b></div>'; boldLines = null; }
+            flushBlock();
             return '<div style="line-height:1.7;">' + html + '</div>';
         }
 
         function generateClientReportMarkdown(p) {
+            const esc = (v) => escapeHtml(v === undefined || v === null ? '' : v);
+            const hasRealScore = (p.ai_score !== undefined && p.ai_score !== null && String(p.ai_score).trim() !== '');
+            const roomsArr = Array.isArray(p.rooms || p.room_types) ? (p.rooms || p.room_types) : [];
+            const roomsText = roomsArr.length > 0 ? roomsArr.map(esc).join(', ') : 'Bilgi Sorulacak';
             return `
                 <div style="background:rgba(0,113,227,0.04); border-radius:16px; padding:1.5rem; border:1px solid rgba(0,113,227,0.15); margin-bottom:1.5rem;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                        <h3 style="font-size:20px; font-weight:700; margin:0;">${p.name || 'Prestij Projesi'}</h3>
-                        <span style="background:var(--accent); color:#fff; padding:4px 12px; border-radius:15px; font-size:13px; font-weight:700;">AI Skoru: ${p.ai_score || '9.5'}/10</span>
+                        <h3 style="font-size:20px; font-weight:700; margin:0;">${esc(p.name) || 'Prestij Projesi'}</h3>
+                        ${hasRealScore ? `<span style="background:var(--accent); color:#fff; padding:4px 12px; border-radius:15px; font-size:13px; font-weight:700;">AI Skoru: ${esc(p.ai_score)}/10</span>` : ''}
                     </div>
-                    <p style="color:var(--text-secondary); margin-bottom:0.5rem;"><i class="fa-solid fa-location-dot"></i> ${p.location || 'Ankara'}</p>
-                    <p style="color:var(--text-secondary); margin-bottom:0;"><i class="fa-solid fa-building"></i> Geliştirici: ${p.developer || 'Coldwell Banker VIP'}</p>
+                    <p style="color:var(--text-secondary); margin-bottom:0.5rem;"><i class="fa-solid fa-location-dot"></i> ${esc(p.location) || 'Ankara'}</p>
+                    <p style="color:var(--text-secondary); margin-bottom:0;"><i class="fa-solid fa-building"></i> Geliştirici: ${esc(p.developer) || 'Coldwell Banker VIP'}</p>
                 </div>
                 <h4 style="font-size:16px; font-weight:700; color:var(--accent); margin-bottom:0.5rem;">📌 Proje Özet Özellikleri</h4>
                 <ul style="padding-left:1.2rem; margin-bottom:1.5rem;">
-                    <li>Fiyat Skalası: <strong>${p.price_display || 'Fiyat Sorulacak'}</strong></li>
-                    <li>Daire Tipleri: <strong>${(Array.isArray(p.rooms || p.room_types) ? (p.rooms || p.room_types).join(', ') : '1+1, 2+1')}</strong></li>
-                    <li>TKGM Durumu: <strong>${p.ada_no ? `Ada ${p.ada_no} / Parsel ${p.parsel_no} (Doğrulanmış)` : 'Onaylı Parsel'}</strong></li>
-                    <li>Yatırım Notu: <strong>A+ Üst Seviye Yatırım Potansiyeli</strong></li>
+                    <li>Fiyat Skalası: <strong>${esc(p.price_display) || 'Fiyat Sorulacak'}</strong></li>
+                    <li>Daire Tipleri: <strong>${roomsText}</strong></li>
+                    <li>TKGM Durumu: <strong>${p.ada_no ? `Ada ${esc(p.ada_no)} / Parsel ${esc(p.parsel_no)} (Doğrulanmış)` : 'Onaylı Parsel'}</strong></li>
                 </ul>
                 <h4 style="font-size:16px; font-weight:700; color:var(--accent); margin-bottom:0.5rem;">💡 Nexa AI Danışman Değerlendirmesi</h4>
-                <p style="color:var(--text-primary);">${p.description || 'Bu proje lokasyonu, yapı kalitesi ve bölge değer artış potansiyeli ile yüksek yatırım değeri taşımaktadır.'}</p>
+                <p style="color:var(--text-primary);">${esc(p.description) || 'Bu proje lokasyonu, yapı kalitesi ve bölge değer artış potansiyeli ile yüksek yatırım değeri taşımaktadır.'}</p>
             `;
         }
 

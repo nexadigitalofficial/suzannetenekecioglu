@@ -153,6 +153,12 @@ def extract_keywords_and_projects(text):
         if any(k in k2 and k != k2 for k2 in keys):
             continue
         out.append(PROJE_SINONIMLERI[k])
+    # Tam adı geçen proje varsa bölüm genişletmesi gereksiz (örn. "neva start bravo" → yalnızca NEVA)
+    t_flat = re.sub(r'\s+', ' ', t.replace("-", " ")).strip()
+    exact = [name for name in out
+             if norm_text(name) in t or re.sub(r'\s+', ' ', norm_text(name).replace("-", " ")).strip() in t_flat]
+    if exact:
+        return list(dict.fromkeys(exact))
     # "START BRAVO" gibi ortak bölüm adı: aynı bölgedeki tüm projeleri de getir
     for name in list(out):
         if " - " in name:
@@ -192,11 +198,15 @@ def _norm_price_num(raw):
 
 
 def price_numeric(item):
-    """Fiyatı sayıya çevirir: '₺2.400.000' (başta), '2.400.000₺' (sonda), '2.400.000 TL'."""
+    """Fiyatı sayıya çevirir: '₺2.400.000' (başta), '2.400.000₺' (sonda),
+    '2.400.000 TL', '56.000 ₺ / ay'; birim taşımayan '2.400.000' de desteklenir."""
     pd = item.get("price_display") or ""
     m = re.search(r'([\d][\d.,]*)\s*(?:₺|TL|lira)|(?:₺|TL)\s*([\d][\d.,]*)', pd, re.I)
     if not m:
-        return None
+        m2 = re.search(r'([\d][\d.,]*)', pd)
+        if not m2:
+            return None
+        return _norm_price_num(m2.group(1))
     return _norm_price_num(m.group(1) or m.group(2))
 
 
@@ -275,6 +285,11 @@ def score_item(item, budget, regions, rooms, goals, want_type, named_projects):
                 score += 5
                 parts.append(f"Aylik kira: {item.get('price_display')}")
         else:
+            if budget.get("min") and budget.get("max") is None:
+                # M1: tek fiyat bütçe (örn. "5 milyon") aynı aralık mantığıyla
+                # puanlanır: min = 0.85 × tek değer, max = tek değer
+                tek = budget["min"]
+                budget = {"min": int(tek * 0.85), "max": tek}
             lo = budget.get("min") or 0
             hi = budget.get("max") or lo
             band_lo, band_hi = pmin, pmax or pmin
@@ -283,7 +298,7 @@ def score_item(item, budget, regions, rooms, goals, want_type, named_projects):
                 score += 25
                 parts.append(f"{item.get('price_display')} fiyat bandi bütce araliginizla örtüsüyor")
             elif hi == lo and band_lo <= lo * 1.15:
-                # tek fiyat bütçede (örn. "5 milyon") tolerans: 5.75M'e kadar uygun
+                # eşit uçlu aralıkta tolerans: lo * 1.15'e kadar uygun
                 score += 20
                 parts.append(f"{item.get('price_display')} fiyati bütcenize yakin")
             else:
@@ -394,9 +409,16 @@ def process_nexa_query(user_query):
     cb_matches = cbs[:3]
 
     rental_notice = ""
-    if want_type == "Kiralık" and not any(it.get("listing_type") == "Kiralık" for _, it, _ in cbs):
-        rental_notice = ("\n_Not: Kiralık envanterimiz şu an sistemde yer almıyor; aşağıdaki "
-                         "satılık projeler yatırım amaçlı değerlendirilebilir._")
+    if want_type == "Kiralık":
+        kiralik_var = any(it.get("type") == "portfolio" and it.get("listing_type") == "Kiralık"
+                          for it in items)
+        if kiralik_var:
+            rental_notice = ("\n_Not: Portföyümüzde kiralık ilanlarımız mevcut "
+                             "(ör. 56.000 ₺/ay kiralık rezidans); isterseniz onları gösterebilirim, "
+                             "aşağıdaki satılık projelerimiz de yatırım amaçlı değerlendirilebilir._")
+        else:
+            rental_notice = ("\n_Not: Kiralık envanterimiz şu an sistemde yer almıyor; aşağıdaki "
+                             "satılık projeler yatırım amaçlı değerlendirilebilir._")
 
     # Rapor başlığı
     def fmt_money(v):
