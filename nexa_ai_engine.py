@@ -59,8 +59,8 @@ def norm_text(t):
     return (t or "").lower().replace("ı", "i").replace("ş", "s").replace("ğ", "g").replace("ü", "u").replace("ö", "o").replace("ç", "c")
 
 def extract_budget(text):
-    """Bütçe: '5 milyon', '3.5m', '60 bin', '5000000', '5.000.000 tl' veya '5-10M' aralığı."""
-    t = text.lower()
+    """Bütçe: '5 milyon', '3.5m', '60 bin', '5000000', '5.000.000 tl', '₺5M' veya '5-10M' aralığı."""
+    t = text.lower().replace("₺", "")
     rng = re.search(r'(\d[\d.,]*)\s*[-–]\s*(\d[\d.,]*)\s*(?:milyon|mln|m\b|bin|tl)', t)
     if rng:
         g0 = rng.group(0)
@@ -139,18 +139,60 @@ def extract_keywords_and_projects(text):
     return list(dict.fromkeys(hits))
 
 # ─── PUANLAMA ───
+def _norm_price_num(raw):
+    """Binlik/ondalık ayraç normalizasyonu: '2.400.000', '3,775,000', '360.000,00'."""
+    s = raw.strip()
+    if not s:
+        return None
+    if "." in s and "," in s:
+        if s.rfind(",") > s.rfind("."):
+            s = s.replace(".", "").replace(",", ".")
+        else:
+            s = s.replace(",", "")
+    elif "," in s:
+        parts = s.split(",")
+        if len(parts) == 2 and len(parts[1]) <= 2:
+            s = s.replace(",", ".")
+        else:
+            s = s.replace(",", "")
+    elif "." in s:
+        parts = s.split(".")
+        if len(parts) > 2 or len(parts[-1]) == 3:
+            s = s.replace(".", "")
+    try:
+        v = float(s)
+    except (ValueError, TypeError):
+        return None
+    return int(v) if v.is_integer() else v
+
+
 def price_numeric(item):
-    """Portföy fiyatını sayıya çevirir (Kiralık'ta aylık)."""
+    """Fiyatı sayıya çevirir: '₺2.400.000' (başta), '2.400.000₺' (sonda), '2.400.000 TL'."""
     pd = item.get("price_display") or ""
-    m = re.search(r'([\d.,]+)\s*₺', pd)
+    m = re.search(r'([\d][\d.,]*)\s*(?:₺|TL|lira)|(?:₺|TL)\s*([\d][\d.,]*)', pd, re.I)
     if not m:
         return None
-    return int(float(m.group(1).replace('.', '').replace(',', '.')))
+    return _norm_price_num(m.group(1) or m.group(2))
+
+
+def price_range(item):
+    """Fiyat bandını (min, max) döner; tek fiyatta ikisi eşittir."""
+    pd = item.get("price_display") or ""
+    nums = []
+    for m in re.finditer(r'([\d][\d.,]*)\s*(?:₺|TL|lira)|(?:₺|TL)\s*([\d][\d.,]*)', pd, re.I):
+        v = _norm_price_num(m.group(1) or m.group(2))
+        if v:
+            nums.append(v)
+    if not nums:
+        return None, None
+    return min(nums), max(nums)
 
 def score_item(item, budget, regions, rooms, goals, want_type, named_projects):
     """Her kayıt için gerçek veriyle puan üretir."""
     score = 20
     parts = []
+    item["_region_hit"] = False
+    item["_name_hit"] = False
 
     ilce = norm_text(item.get("ilce") or "")
     il = norm_text(item.get("il") or "")
@@ -165,6 +207,7 @@ def score_item(item, budget, regions, rooms, goals, want_type, named_projects):
         if rn and (rn in ilce or rn in mahalle or rn in t or (rn == "ankara" and rn in il)):
             score += 35
             region_hit = True
+            item["_region_hit"] = True
             parts.append(f"Bölgeniz {reg} ile eşleşiyor")
             break
     if not region_hit and regions and regions[0] not in ("Ankara",) and ilce:
@@ -174,6 +217,7 @@ def score_item(item, budget, regions, rooms, goals, want_type, named_projects):
     # 2) Proje adı eşleşmesi (doğrudan arama)
     if title in named_projects or any(np in t for np in named_projects):
         score += 30
+        item["_name_hit"] = True
         parts.append("Sorgunuzda bu projenin adi gecti")
     elif any(syn in t for syn in PROJE_SINONIMLERI):
         pass
@@ -188,29 +232,39 @@ def score_item(item, budget, regions, rooms, goals, want_type, named_projects):
             score += 5
             parts.append(f"Oda tipi: {item.get('room_info')}")
 
-    # 4) Bütçe eşleşmesi (sayısal fiyatı olanlar için)
-    pn = price_numeric(item)
+    # 4) Bütçe eşleşmesi (fiyat bandı ile örtüşme kontrolü)
+    pmin, pmax = price_range(item)
     is_rent = item.get("listing_type") == "Kiralık"
-    if budget and pn:
+    if budget and pmin:
         if is_rent:
             # aylık kira, bütçe doğrudan aylık karşılaştırılır
-            if budget["min"] and budget["min"] >= pn * 0.85:
+            lo = budget.get("min") or 0
+            hi = budget.get("max") or lo
+            if lo and lo <= pmin <= (hi or lo):
                 score += 25
                 parts.append(f"Aylik {item.get('price_display')} kira bütcenize uygun")
-            elif budget["min"]:
+            elif lo and pmin <= lo * 1.15:
                 score += 12
                 parts.append(f"Aylik kira: {item.get('price_display')}")
+            else:
+                score += 5
+                parts.append(f"Aylik kira: {item.get('price_display')}")
         else:
-            if budget["max"] and (budget["min"] or 0) * 0.85 <= pn <= budget["max"] * 1.05:
+            lo = budget.get("min") or 0
+            hi = budget.get("max") or lo
+            band_lo, band_hi = pmin, pmax or pmin
+            # proje fiyat bandı ile bütçe aralığı örtüşüyor mu?
+            if lo and band_hi >= lo * 0.85 and band_lo <= hi * 1.05:
                 score += 25
-                parts.append(f"{item.get('price_display')} fiyati bütce araliginizda")
-            elif budget["min"] and budget["min"] <= pn * 1.15:
+                parts.append(f"{item.get('price_display')} fiyat bandi bütce araliginizla örtüsüyor")
+            elif hi == lo and band_lo <= lo * 1.15:
+                # tek fiyat bütçede (örn. "5 milyon") tolerans: 5.75M'e kadar uygun
                 score += 20
-                parts.append(f"{item.get('price_display')} fiyati bütce araliginizda")
+                parts.append(f"{item.get('price_display')} fiyati bütcenize yakin")
             else:
                 score += 5
                 parts.append(f"Fiyat: {item.get('price_display')}")
-    elif budget and not pn:
+    elif budget and not pmin:
         score += 8
         parts.append("Guncel fiyat icin danisman bilgi verebilir")
 
@@ -303,16 +357,21 @@ def process_nexa_query(user_query):
 
     cbs = [(s, it, p) for s, it, p in scored if it.get("type") == "project" and not it["id"].startswith("cb-")]
     if regions:
-        # Bölge sorulduysa yalnızca o bölgedeki projeler gösterilir
-        region_hits = [x for x in cbs if any("eşleşiyor" in (p or "") for p in x[2])]
+        # Bölge sorulduysa yalnızca o bölgedeki projeler gösterilir (flag bazlı)
+        region_hits = [x for x in cbs if x[1].get("_region_hit")]
         if region_hits:
             cbs = region_hits
     if named_projects:
-        # Proje adı ile sorulduysa yalnızca adı geçen projeler gösterilir
-        name_hits = [x for x in cbs if any("adi gecti" in (p or "") for p in x[2])]
+        # Proje adı ile sorulduysa yalnızca adı geçen projeler gösterilir (flag bazlı)
+        name_hits = [x for x in cbs if x[1].get("_name_hit")]
         if name_hits:
             cbs = name_hits
     cb_matches = cbs[:3]
+
+    rental_notice = ""
+    if want_type == "Kiralık" and not any(it.get("listing_type") == "Kiralık" for _, it, _ in cbs):
+        rental_notice = ("\n_Not: Kiralık envanterimiz şu an sistemde yer almıyor; aşağıdaki "
+                         "satılık projeler yatırım amaçlı değerlendirilebilir._")
 
     # Rapor başlığı
     def fmt_money(v):
@@ -339,6 +398,8 @@ def process_nexa_query(user_query):
 
     if not cb_matches:
         lines.append("\n_Ölçütlerinizle eşleşen markalı proje bulunamadı; portföy verileri değerlendirildi._")
+    elif rental_notice:
+        lines.append(rental_notice)
 
     # Çekirdek proje kartları
     for s, it, parts in cb_matches:

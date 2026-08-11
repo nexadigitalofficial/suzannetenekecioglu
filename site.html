@@ -2973,7 +2973,7 @@
             const message = input.value.trim();
             if (!message) return;
             
-            addChatMessage(message, 'user');
+            addChatMessage(escapeHtml(message), 'user');
             input.value = '';
 
             const loadingId = 'chat-load-' + Date.now();
@@ -3222,11 +3222,85 @@
             if(bodyEl && project) bodyEl.innerHTML = generateClientReportMarkdown(project);
         }
 
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function formatMarkdownReport(reportText) {
             if(typeof reportText !== 'string') return '';
             const nl = String.fromCharCode(10);
-            let text = reportText.split(nl).join('<br>');
-            return '<div style="line-height:1.7;">' + text + '</div>';
+            let html = '';
+            let listOpen = false;
+            const lines = reportText.split(nl);
+
+            const inline = (t) => t
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.06);padding:1px 4px;border-radius:4px;font-size:12px;">$1</code>');
+
+            const closeList = () => { if (listOpen) { html += '</ul>'; listOpen = false; } };
+
+            for (let raw of lines) {
+                const line = raw.trim();
+                if (!line) { closeList(); html += '<div style="height:6px;"></div>'; continue; }
+
+                // Başlık: ### Başlık / ## Başlık / # Başlık
+                const h = line.match(/^(#{1,3})\s+(.*)$/);
+                if (h) {
+                    closeList();
+                    const size = h[1].length === 1 ? '16px' : (h[1].length === 2 ? '15px' : '14px');
+                    html += `<div style="font-size:${size};font-weight:700;margin:10px 0 4px;">${inline(escapeHtml(h[2]))}</div>`;
+                    continue;
+                }
+
+                // Liste: - madde / * madde
+                const li = line.match(/^[-*]\s+(.*)$/);
+                if (li) {
+                    if (!listOpen) { html += '<ul style="margin:6px 0 6px 0;padding-left:20px;">'; listOpen = true; }
+                    html += `<li style="margin:3px 0;">${inline(escapeHtml(li[1]))}</li>`;
+                    continue;
+                }
+
+                // Numara: 1. madde
+                const ol = line.match(/^\d+\.\s+(.*)$/);
+                if (ol) {
+                    closeList();
+                    html += `<div style="margin:3px 0;">${inline(escapeHtml(ol[1]))}</div>`;
+                    continue;
+                }
+
+                // Tablo: | A | B |  ve ayırıcı |---|---|
+                if (line.startsWith('|')) {
+                    closeList();
+                    if (/^\|[\s\-:|]+\|$/.test(line) && line.includes('-')) {
+                        html += '<div style="height:4px;"></div>';
+                        continue;
+                    }
+                    const cells = line.replace(/^\|/, '').replace(/\|$/, '').split('|');
+                    html += '<div style="display:flex;gap:8px;border-bottom:1px solid rgba(0,0,0,0.1);padding:4px 0;">'
+                        + cells.map(c => `<span style="flex:1;">${inline(escapeHtml(c.trim()))}</span>`).join('')
+                        + '</div>';
+                    continue;
+                }
+
+                // Ayraç: --- / ***
+                if (/^[-=*_]{3,}$/.test(line)) {
+                    closeList();
+                    html += '<div style="border-top:1px solid rgba(0,0,0,0.1);margin:8px 0;"></div>';
+                    continue;
+                }
+
+                // Düz metin
+                closeList();
+                html += '<div>' + inline(escapeHtml(line)) + '</div>';
+            }
+            closeList();
+            return '<div style="line-height:1.7;">' + html + '</div>';
         }
 
         function generateClientReportMarkdown(p) {

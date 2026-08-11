@@ -12,7 +12,7 @@ import re
 import threading
 import time
 from pathlib import Path
-from flask import Flask, render_template_string, send_file, send_from_directory, request, jsonify, Response
+from flask import Flask, render_template_string, send_file, send_from_directory, request, jsonify, Response, redirect
 
 try:
     import requests as _requests
@@ -290,7 +290,9 @@ def stream_video(project_id):
     folder_name = project.get("folder_name")
     target_dir = PROJELER_DIR / folder_name
 
+    # P3: TANITIM (SLIDESHOW olmayan) ve en büyük dosya önceliği
     mp4_files = list(target_dir.glob("*.mp4")) if target_dir.exists() else []
+    mp4_files.sort(key=lambda f: (1 if f.name.upper().startswith("SLIDESHOW") else 0, -f.stat().st_size))
     real_mp4 = None
     for file in mp4_files:
         if file.stat().st_size > 500 * 1024:
@@ -497,12 +499,7 @@ MAIN_TEMPLATE = """
 
 @app.route("/")
 def index():
-    if JSON_FILE.exists():
-        with open(JSON_FILE, "r", encoding="utf-8") as f:
-            projects = json.load(f)
-    else:
-        projects = []
-    return render_template_string(MAIN_TEMPLATE, projects=projects)
+    return redirect("/site", code=302)
 
 if __name__ == "__main__":
     print("[START] COLDWELL BANKER VIP - CLOUD STREAM SYSTEM (FOLDER 3)")

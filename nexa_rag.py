@@ -10,6 +10,7 @@ import json
 import time
 import sqlite3
 import logging
+import threading
 from pathlib import Path
 
 logger = logging.getLogger("nexa.rag")
@@ -18,6 +19,15 @@ NEXA_ROOT = Path(r"C:\Users\USER\Desktop\NEXA_PRIME_v2_ENTERPRISE")
 DB_PATH = NEXA_ROOT / "nexa_database.db"
 DOCS_DIR = NEXA_ROOT / "static" / "documents"
 SUMMARIES_FILE = Path(r"C:\Users\USER\Desktop\3\nexa_project_summaries.json")
+
+# ─── KOTA / PERFORMANS YÖNETİMİ (P8/P9) ───
+_key_cooldowns = {}          # key -> süre sonu (429/401 tespitinde 60 sn yasak)
+_last_good_model = {}        # key -> son başarılı model (öncelikle dene)
+_reply_cache = {}            # normalize sorgu -> (yanıt, zaman)
+_cache_lock = threading.Lock()
+_save_lock = threading.Lock()
+REPLY_TTL = 300              # 5 dk
+KEY_COOLDOWN = 60
 
 FALLBACK_MODELS = [
     "gemini-2.5-pro",
@@ -169,27 +179,60 @@ Kısa, şık ve maddeler halinde yaz. Dokümanda yer almasa bile gerçek coğraf
 def _gemini_generate(contents):
     from google import genai
     keys = _read_api_keys()
+    now = time.time()
     targets = [m for m in FALLBACK_MODELS]
     for key in keys:
+        with _cache_lock:
+            cd = _key_cooldowns.get(key, 0)
+            preferred = _last_good_model.get(key)
+        if cd > now:
+            logger.warning("Anahtar %s... soğutma süresinde (%ds kaldi)", key[-6:], int(cd - now))
+            continue
+        model_order = targets if not preferred else [preferred] + [m for m in targets if m != preferred]
         try:
             client = genai.Client(api_key=key)
-            for model in targets:
+            for model in model_order:
                 try:
                     resp = client.models.generate_content(model=model, contents=contents)
                     if resp and resp.text:
+                        with _cache_lock:
+                            _last_good_model[key] = model
                         return resp.text
                 except Exception as e:
-                    logger.warning("Model %s failed (%s)", model, str(e)[:120])
+                    msg = str(e)
+                    if _is_quota_error(msg):
+                        with _cache_lock:
+                            _key_cooldowns[key] = time.time() + KEY_COOLDOWN
+                        logger.warning("Anahtar %s kota yok (60sn yasak): %s", key[-6:], msg[:100])
+                        break
+                    logger.warning("Model %s failed (%s)", model, msg[:120])
                     continue
         except Exception as e:
-            logger.warning("Key failed: %s", str(e)[:120])
+            msg = str(e)
+            if _is_quota_error(msg):
+                with _cache_lock:
+                    _key_cooldowns[key] = time.time() + KEY_COOLDOWN
+            logger.warning("Key failed: %s", msg[:120])
             continue
     return _ollama_fallback(contents)
+
+
+def _is_quota_error(msg):
+    m = (msg or "").lower()
+    return ("429" in m or "quota" in m or "resource_exhausted" in m
+            or "rate limit" in m or "permission" in m or "api key not valid" in m)
 
 
 def _ollama_fallback(prompt):
     try:
         import httpx
+        # Ping: Ollama kapalıysa 15 sn yerine 2 sn içinde vazgeç (P9)
+        try:
+            ping = httpx.get("http://localhost:11434/api/tags", timeout=2.0)
+            if ping.status_code != 200:
+                return None
+        except Exception:
+            return None
         resp = httpx.post("http://localhost:11434/api/generate",
                           json={"model": "llama3", "prompt": prompt, "stream": False},
                           timeout=15.0)
@@ -234,8 +277,9 @@ def _load_summaries():
 
 def _save_summaries(data):
     try:
-        SUMMARIES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=1),
-                                  encoding="utf-8")
+        with _save_lock:
+            SUMMARIES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=1),
+                                      encoding="utf-8")
     except Exception as e:
         logger.warning("Ozet kaydedilemedi: %s", e)
 
@@ -304,17 +348,36 @@ def cognitive_chat(user_message, project=None):
     Başarısızlıkta None döner; çağıran heuristic'e düşer.
     """
     msg = (user_message or "").strip()
+    if not msg:
+        return None
     is_location_query = any(kw in msg.lower() for kw in _LOCATION_KEYWORDS)
+
+    # P8: 5 dk TTL'li yanıt önbelleği — aynı soru Gemini'yi tekrar meşgul etmez
+    cache_key = ("P:" + project["name"]) if project else ("G:" + msg.lower().strip())
+    with _cache_lock:
+        hit = _reply_cache.get(cache_key)
+        if hit and time.time() - hit[1] < REPLY_TTL:
+            return hit[0]
+
+    def _cached(reply):
+        if reply:
+            with _cache_lock:
+                _reply_cache[cache_key] = (reply, time.time())
+                if len(_reply_cache) > 200:
+                    stale = [k for k, (_, ts) in _reply_cache.items() if time.time() - ts > REPLY_TTL]
+                    for k in stale:
+                        _reply_cache.pop(k, None)
+        return reply
 
     if project:
         cached = get_project_summary(project["name"])
         if cached:
-            return f"**{project['name']} — Proje Özeti**\n\n{cached}\n\n{CONTACT_LINE}"
+            return _cached(f"**{project['name']} — Proje Özeti**\n\n{cached}\n\n{CONTACT_LINE}")
         try:
             s = build_project_summary(project)
             if s:
                 _save_summaries(_merge_summary(project["name"], project["id"], s))
-                return f"**{project['name']} — Proje Özeti**\n\n{s}\n\n{CONTACT_LINE}"
+                return _cached(f"**{project['name']} — Proje Özeti**\n\n{s}\n\n{CONTACT_LINE}")
         except Exception:
             pass
         context = build_project_context(project["id"])
@@ -375,7 +438,7 @@ Sonuna şu iletişim satırını ekle: {CONTACT_LINE}
     try:
         reply = _gemini_generate(system)
         if reply and len(reply.strip()) > 20:
-            return reply.strip()
+            return _cached(reply.strip())
     except Exception as e:
         logger.error("Cognitive generation failed: %s", e)
     return None
