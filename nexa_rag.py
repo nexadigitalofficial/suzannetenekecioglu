@@ -76,13 +76,13 @@ def _load_db():
 
 # ─── BELGE BESLEME KALİTESİ (RAG feed) ───
 # Çözülememiş PDF metni: kontrol karakterleri + Latin-1/IPA/Greek bloğunda 4+ ardışık karakter
-# (glyph'ler: ʤʡʦʬ...; PDF'den gelen \x01\x02\x03 de bölünmezlik için dahil)
-_GARBAGE_RE = re.compile(r"[\u0001-\u0008\u000b\u000c\u000e-\u001f\u007f-\u02ff]{4,}")
+# (glyph'ler: ʤʡʦʬ...; \ufffd = değiştirme karakteri, bozuk font çıktısı)
+_GARBAGE_RE = re.compile(r"[\u0001-\u0008\u000b\u000c\u000e-\u001f\u007f-\u02ff\ufffd]{4,}")
 _MIN_PIECE = 12
 
 
 def _glyph_ratio(s):
-    return sum(1 for c in s if "\u0080" <= c <= "\u02ff") / max(len(s), 1)
+    return sum(1 for c in s if "\u0080" <= c <= "\u02ff" or c == "\ufffd") / max(len(s), 1)
 
 
 def _clean_chunk(text):
