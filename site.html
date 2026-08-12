@@ -3465,7 +3465,13 @@
             const project = projectsData.find(p => String(p.id) === String(projectId) || String(p.db_id) === String(projectId));
             const titleEl = document.getElementById('reportProjectTitle');
             const bodyEl = document.getElementById('reportModalBody');
+            const footerEl = document.getElementById('reportModalFooter');
             
+            if(footerEl) footerEl.style.display = 'flex';
+            if(project) {
+                const waBtn = document.getElementById('reportWaBtn');
+                if(waBtn) waBtn.href = 'https://wa.me/905354895656?text=' + encodeURIComponent('Merhaba Suzanne Hanım, ' + (project.name || '') + ' projesi hakkında bilgi almak istiyorum.');
+            }
             if(titleEl && project) titleEl.innerText = (project.name || 'Proje') + ' — Nexa AI Zeka Raporu';
             if(bodyEl) bodyEl.innerHTML = '<div style="text-align:center; padding:3rem;"><i class="fa-solid fa-brain fa-spin" style="font-size:36px; color:var(--accent); margin-bottom:1rem;"></i><p>Nexa AI Zeka Raporu Yükleniyor...</p></div>';
 
@@ -3504,6 +3510,7 @@
             let listOpen = false, olOpen = false;
             let tableRows = [], tableHasHeader = false;
             let para = [], boldLines = null;
+            let inCta = false, heroPending = false;
 
             const inline = (t) => t
                 .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
@@ -3514,19 +3521,27 @@
                 if (listOpen) { html += '</ul>'; listOpen = false; }
                 if (olOpen) { html += '</ol>'; olOpen = false; }
             };
+            const closeCta = () => {
+                if (!inCta) return;
+                inCta = false;
+                html += '</div>';
+            };
             const flushPara = () => {
-                if (para.length) { html += '<div>' + inline(para.join('<br>')) + '</div>'; para = []; }
+                closeCta();
+                if (para.length) { html += '<div style="margin:5px 0;">' + inline(para.join('<br>')) + '</div>'; para = []; }
             };
             const flushTable = () => {
                 if (tableRows.length) {
-                    html += '<table style="width:100%;border-collapse:collapse;margin:8px 0;font-size:13px;">';
+                    html += '<div style="overflow:hidden;border:1px solid rgba(0,0,0,0.1);border-radius:12px;margin:10px 0;">'
+                          + '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
                     tableRows.forEach((cells, i) => {
                         const th = tableHasHeader && i === 0;
+                        const rowSep = i === tableRows.length - 1 ? 'none' : '1px solid rgba(0,0,0,0.07)';
                         html += '<tr>' + cells.map(c =>
-                            `<${th ? 'th' : 'td'} style="border:1px solid rgba(0,0,0,0.12);padding:5px 8px;text-align:left;${th ? 'background:rgba(0,113,227,0.06);font-weight:700;' : ''}">${inline(c)}</${th ? 'th' : 'td'}>`
+                            `<${th ? 'th' : 'td'} style="border-bottom:${rowSep};padding:7px 10px;text-align:left;${th ? 'background:linear-gradient(135deg,rgba(0,113,227,0.08),rgba(94,92,230,0.08));font-weight:700;' : (i % 2 ? 'background:rgba(0,0,0,0.02);' : '')}">${inline(c)}</${th ? 'th' : 'td'}>`
                         ).join('') + '</tr>';
                     });
-                    html += '</table>';
+                    html += '</table></div>';
                 }
                 tableRows = [];
                 tableHasHeader = false;
@@ -3550,18 +3565,97 @@
                 }
                 if (boldLines && line.endsWith('**') && !line.startsWith('**')) {
                     boldLines.push(line.slice(0, -2));
-                    html += '<div><b>' + inline(boldLines.join('<br>')) + '</b></div>';
+                    html += '<div style="margin:8px 0;padding:10px 14px;background:rgba(0,113,227,0.05);border-left:4px solid var(--accent);border-radius:0 10px 10px 0;"><b>' + inline(boldLines.join('<br>')) + '</b></div>';
                     boldLines = null;
                     continue;
                 }
                 if (boldLines) { boldLines.push(line); continue; }
+
+                // Hero kart: "DANISMAN NOTU — Proje Adı"
+                const hero = line.match(/^DANISMAN NOTU\s*[—–-]\s*(.+)$/i);
+                if (hero) {
+                    flushBlock();
+                    heroPending = true;
+                    html += '<div style="background:linear-gradient(135deg,#0071E3,#5E5CE6);border-radius:16px;padding:1.5rem 1.6rem;color:#fff;margin-bottom:1.1rem;position:relative;overflow:hidden;">'
+                          + '<div style="font-size:10px;letter-spacing:2.5px;opacity:.8;font-weight:700;text-transform:uppercase;">Nexa AI</div>'
+                          + '<div style="font-size:21px;font-weight:800;margin-top:3px;line-height:1.3;">' + inline(hero[1]) + '</div>'
+                          + '<div style="font-size:12.5px;opacity:.85;margin-top:8px;"><i class="fa-solid fa-brain"></i> Yapay Zekâ Destekli Danışman Notu — güncel proje verileriyle otomatik üretildi</div>'
+                          + '</div>';
+                    continue;
+                }
+                // Sohbet analiz raporu başlığı da hero olarak
+                if (/^\*\*Nexa AI Proje Zekası Analiz Raporu:?\*\*$/.test(line)) {
+                    flushBlock();
+                    html += '<div style="background:linear-gradient(135deg,#0071E3,#5E5CE6);border-radius:16px;padding:1.3rem 1.6rem;color:#fff;margin-bottom:1rem;">'
+                          + '<div style="font-size:10px;letter-spacing:2.5px;opacity:.8;font-weight:700;text-transform:uppercase;">Nexa AI</div>'
+                          + '<div style="font-size:19px;font-weight:800;margin-top:3px;">Analiz Raporu</div>'
+                          + '</div>';
+                    continue;
+                }
+                // Hero'dan hemen sonraki "======" ayraç satırı yutulur
+                if (/^={3,}$/.test(line)) {
+                    if (heroPending) { heroPending = false; continue; }
+                    flushBlock();
+                    html += '<div style="border-top:1px solid rgba(0,0,0,0.1);margin:10px 0;"></div>';
+                    continue;
+                }
+
+                // Bölüm başlığı: emoji + BÜYÜK HARF metin (📌 PROJE ÖZETİ)
+                const sec = line.match(/^([📌💡⭐💎🏆🔑📈🏙️💰✅❌🚀📋🧭📊])\s*([A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ0-9 .,:&'"'-]{1,64})$/u);
+                if (sec) {
+                    flushBlock();
+                    html += '<div style="display:flex;align-items:center;gap:10px;margin:1.5rem 0 0.5rem;">'
+                          + '<span style="width:4px;height:20px;background:var(--accent);border-radius:3px;display:inline-block;"></span>'
+                          + '<span style="font-size:14px;font-weight:800;letter-spacing:0.8px;color:var(--text-primary);text-transform:uppercase;">' + sec[1] + ' ' + inline(sec[2]) + '</span>'
+                          + '</div>';
+                    continue;
+                }
+
+                // Özellik satırı: • Etiket: Değer → ikili sütun
+                const spec = line.match(/^•\s+([^:：]{1,40})[:：]\s*(.+)$/);
+                if (spec) {
+                    flushPara(); flushTable();
+                    const lab = spec[1].replace(/^[*\s]+|[*\s]+$/g, '').trim();
+                    const val = spec[2].trim().replace(/^[*\s]+/, '');
+                    html += '<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;padding:5px 0;">'
+                          + '<span style="min-width:120px;font-size:13px;font-weight:700;color:var(--text-secondary);white-space:nowrap;">' + inline(lab) + '</span>'
+                          + '<span style="font-size:14px;font-weight:600;color:var(--text-primary);">' + inline(val) + '</span>'
+                          + '</div>';
+                    continue;
+                }
+
+                // İletişim CTA kartı: 📞 satırı + WhatsApp/Hemen Ara butonları
+                const cta = line.match(/^📞\s*(.+)$/);
+                if (cta) {
+                    flushBlock();
+                    inCta = true;
+                    html += '<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:1.2rem 0 0.5rem;padding:1rem 1.25rem;border-radius:14px;background:linear-gradient(135deg,rgba(37,211,102,0.10),rgba(0,113,227,0.06));border:1px solid rgba(37,211,102,0.3);">'
+                          + '<div style="font-size:14px;font-weight:800;color:var(--text-primary);"><i class="fa-solid fa-phone" style="color:#25D366;"></i> ' + inline(cta[1]) + '</div>'
+                          + '<div style="display:flex;gap:8px;">'
+                          + '<a href="https://wa.me/905354895656" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;font-size:13px;font-weight:700;padding:9px 14px;border-radius:10px;text-decoration:none;"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>'
+                          + '<a href="tel:+905354895656" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;padding:9px 14px;border-radius:10px;text-decoration:none;"><i class="fa-solid fa-phone"></i> Hemen Ara</a>'
+                          + '</div></div>';
+                    continue;
+                }
+                if (inCta) {
+                    html += '<div style="font-size:12.5px;color:var(--text-secondary);margin-top:2px;">' + inline(line) + '</div>';
+                    continue;
+                }
+
+                // Not kutusu: _italik tüm satır_
+                const note = line.match(/^_(.+)_$/);
+                if (note) {
+                    flushBlock();
+                    html += '<div style="margin:10px 0;padding:10px 14px;border-left:4px solid var(--accent);background:rgba(0,113,227,0.05);border-radius:0 10px 10px 0;font-size:13.5px;color:var(--text-secondary);font-style:italic;">' + inline(note[1]) + '</div>';
+                    continue;
+                }
 
                 // Başlık: ### / ## / # → h4 (sınıflı stil)
                 const h = line.match(/^(#{1,3})\s+(.*)$/);
                 if (h) {
                     flushBlock();
                     const size = h[1].length === 1 ? '16px' : (h[1].length === 2 ? '15px' : '14px');
-                    html += `<h4 style="font-size:${size};font-weight:700;margin:10px 0 4px;color:var(--text-primary);">${inline(h[2])}</h4>`;
+                    html += `<h4 style="font-size:${size};font-weight:800;margin:14px 0 6px;color:var(--text-primary);display:flex;align-items:center;gap:8px;"><span style="width:4px;height:16px;background:var(--accent);border-radius:2px;display:inline-block;"></span>${inline(h[2])}</h4>`;
                     continue;
                 }
 
@@ -3577,8 +3671,8 @@
                     continue;
                 }
 
-                // Liste: - madde / * madde → arka arkaya <ul>
-                const li = line.match(/^[-*]\s+(.*)$/);
+                // Liste: - madde / * madde / • madde → arka arkaya <ul>
+                const li = line.match(/^[-*•]\s+(.*)$/);
                 if (li) {
                     flushPara();
                     flushTable();
@@ -3612,7 +3706,7 @@
                 para.push(line);
             }
 
-            if (boldLines) { html += '<div><b>' + inline(boldLines.join('<br>')) + '</b></div>'; boldLines = null; }
+            if (boldLines) { html += '<div style="margin:8px 0;padding:10px 14px;background:rgba(0,113,227,0.05);border-left:4px solid var(--accent);border-radius:0 10px 10px 0;"><b>' + inline(boldLines.join('<br>')) + '</b></div>'; boldLines = null; }
             flushBlock();
             return '<div style="line-height:1.7;">' + html + '</div>';
         }
@@ -3621,7 +3715,7 @@
             const esc = (v) => escapeHtml(v === undefined || v === null ? '' : v);
             const hasRealScore = (p.ai_score !== undefined && p.ai_score !== null && String(p.ai_score).trim() !== '');
             const roomsArr = Array.isArray(p.rooms || p.room_types) ? (p.rooms || p.room_types) : [];
-            const roomsText = roomsArr.length > 0 ? roomsArr.map(esc).join(', ') : 'Bilgi Sorulacak';
+            const roomsText = roomsArr.length > 0 ? roomsArr.map(esc).join(', ') : 'Daire tipleri için danışmanımızdan bilgi alınız';
             return `
                 <div style="background:rgba(0,113,227,0.04); border-radius:16px; padding:1.5rem; border:1px solid rgba(0,113,227,0.15); margin-bottom:1.5rem;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
@@ -3633,7 +3727,7 @@
                 </div>
                 <h4 style="font-size:16px; font-weight:700; color:var(--accent); margin-bottom:0.5rem;">📌 Proje Özet Özellikleri</h4>
                 <ul style="padding-left:1.2rem; margin-bottom:1.5rem;">
-                    <li>Fiyat Skalası: <strong>${esc(p.price_display) || 'Fiyat Sorulacak'}</strong></li>
+                    <li>Fiyat Skalası: <strong>${esc(p.price_display) || 'Güncel Fiyat Listesi İçin Danışın'}</strong></li>
                     <li>Daire Tipleri: <strong>${roomsText}</strong></li>
                     <li>TKGM Durumu: <strong>${p.ada_no ? `Ada ${esc(p.ada_no)} / Parsel ${esc(p.parsel_no)} (Doğrulanmış)` : 'Onaylı Parsel'}</strong></li>
                 </ul>
@@ -3752,6 +3846,13 @@
             </div>
             <div id="reportModalBody" style="padding:2rem; overflow-y:auto; font-size:15px; line-height:1.7; color:var(--text-primary);">
                 <!-- Dynamic Markdown Intelligence Report Content -->
+            </div>
+            <div id="reportModalFooter" style="display:none; align-items:center; justify-content:space-between; gap:10px; padding:1rem 1.5rem; border-top:1px solid rgba(0,0,0,0.08); background:#FAFAFC;">
+                <div style="font-size:13px; color:var(--text-secondary);"><i class="fa-solid fa-circle-info" style="color:var(--accent);"></i> Sorularınız için anlık destek alın</div>
+                <div style="display:flex; gap:10px;">
+                    <a id="reportWaBtn" href="https://wa.me/905354895656" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;font-size:13px;font-weight:700;padding:9px 14px;border-radius:10px;text-decoration:none;"><i class="fa-brands fa-whatsapp"></i> WhatsApp'tan Yaz</a>
+                    <a id="reportTelBtn" href="tel:+905354895656" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;padding:9px 14px;border-radius:10px;text-decoration:none;"><i class="fa-solid fa-phone"></i> Hemen Ara</a>
+                </div>
             </div>
         </div>
     </div>
